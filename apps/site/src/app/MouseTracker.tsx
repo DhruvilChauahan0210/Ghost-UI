@@ -2,11 +2,6 @@
 
 import { useEffect } from 'react';
 
-/**
- * Updates the --mx / --my CSS variables on <html> from the cursor's viewport
- * position. Renders nothing — used only as a data source for CSS gradients
- * (e.g. the footer wordmark).
- */
 export function MouseTracker() {
   useEffect(() => {
     let raf = 0;

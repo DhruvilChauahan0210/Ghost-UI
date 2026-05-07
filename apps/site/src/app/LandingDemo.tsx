@@ -9,7 +9,7 @@ import {
   useGhostOrder,
   useGhostPlan,
 } from '@ghost-ui/react';
-import { useEffect, useRef, useState } from 'react';
+import { useMemo } from 'react';
 
 const ZONE = 'landing.cta';
 
@@ -20,6 +20,8 @@ const BUTTONS = [
   { id: 'pricing', label: 'See pricing' },
   { id: 'contact', label: 'Talk to sales' },
 ];
+
+const BUTTON_LABELS = new Map(BUTTONS.map((b) => [b.id, b.label]));
 
 export function LandingDemo() {
   return (
@@ -91,20 +93,17 @@ function ScorePanel() {
 function EventStream() {
   const engine = useGhostEngine();
   const plan = useGhostPlan();
-  const [events, setEvents] = useState<GhostEvent[]>([]);
-  const tickRef = useRef<number | null>(null);
 
-  useEffect(() => {
-    const update = () => setEvents(engine.events().slice(-14));
-    update();
-    tickRef.current = window.setInterval(update, 220);
-    return () => {
-      if (tickRef.current != null) window.clearInterval(tickRef.current);
-    };
-  }, [engine, plan]);
-
-  const recent = [...events].reverse();
-  const idMap = new Map(BUTTONS.map((b) => [b.id, b.label]));
+  const recent = useMemo(() => {
+    void plan.ts; // re-derive when plan changes
+    const events = engine.events();
+    const out: GhostEvent[] = [];
+    for (let i = events.length - 1, n = 0; i >= 0 && n < 14; i--, n++) {
+      const ev = events[i];
+      if (ev) out.push(ev);
+    }
+    return out;
+  }, [engine, plan.ts]);
 
   return (
     <div className="dash-panel">
@@ -116,17 +115,17 @@ function EventStream() {
       </div>
       <ul className="event-list">
         {recent.length === 0 && <li className="event-empty">no events yet · interact with the buttons above</li>}
-        {recent.map((e, i) => (
-          <li
-            key={`${e.ts}-${i}`}
-            className={`event-row event-${e.type}${e.regret ? ' event-regret' : ''}`}
-          >
-            <span className="event-glyph">{glyph(e.type, !!e.regret)}</span>
-            <span className="event-type">{e.regret ? 'regret' : e.type}</span>
-            <span className="event-id">{idMap.get(e.id) ?? e.id}</span>
-            <span className="event-ts">{relTime(e.ts)}</span>
-          </li>
-        ))}
+        {recent.map((e, i) => {
+          const cls = `event-row event-${e.type}${e.regret ? ' event-regret' : ''}`;
+          return (
+            <li key={`${e.ts}-${i}`} className={cls}>
+              <span className="event-glyph">{glyph(e.type, !!e.regret)}</span>
+              <span className="event-type">{e.regret ? 'regret' : e.type}</span>
+              <span className="event-id">{BUTTON_LABELS.get(e.id) ?? e.id}</span>
+              <span className="event-ts">{relTime(e.ts)}</span>
+            </li>
+          );
+        })}
       </ul>
     </div>
   );
@@ -135,22 +134,11 @@ function EventStream() {
 function StatusBar() {
   const engine = useGhostEngine();
   const plan = useGhostPlan();
-  const [version, setVersion] = useState(0);
-  const [count, setCount] = useState(0);
-  const lastTs = useRef(0);
-
-  useEffect(() => {
-    if (plan.ts !== lastTs.current) {
-      lastTs.current = plan.ts;
-      setVersion((v) => v + 1);
-    }
-  }, [plan.ts]);
-
-  useEffect(() => {
-    const id = window.setInterval(() => setCount(engine.events().length), 220);
-    return () => window.clearInterval(id);
-  }, [engine]);
-
+  const version = useMemo(() => versionFor(plan.ts), [plan.ts]);
+  const count = useMemo(() => {
+    void plan.ts;
+    return engine.events().length;
+  }, [engine, plan.ts]);
   const nodes = Object.keys(plan.emphasis).length;
 
   return (
@@ -202,4 +190,14 @@ function relTime(ts: number): string {
   if (d < 60_000) return `${Math.floor(d / 1000)}s`;
   if (d < 3_600_000) return `${Math.floor(d / 60_000)}m`;
   return `${Math.floor(d / 3_600_000)}h`;
+}
+
+let versionCounter = 0;
+let lastVersionTs = 0;
+function versionFor(ts: number): number {
+  if (ts !== lastVersionTs) {
+    lastVersionTs = ts;
+    versionCounter += 1;
+  }
+  return versionCounter;
 }

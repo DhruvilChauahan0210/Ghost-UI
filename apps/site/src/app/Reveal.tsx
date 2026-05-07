@@ -2,6 +2,24 @@
 
 import { useEffect, useRef, type ReactNode } from 'react';
 
+let sharedIO: IntersectionObserver | null = null;
+const getIO = (): IntersectionObserver | null => {
+  if (typeof IntersectionObserver === 'undefined') return null;
+  if (sharedIO) return sharedIO;
+  sharedIO = new IntersectionObserver(
+    (entries) => {
+      for (const entry of entries) {
+        if (entry.isIntersecting) {
+          entry.target.classList.add('in');
+          sharedIO?.unobserve(entry.target);
+        }
+      }
+    },
+    { threshold: 0.12 },
+  );
+  return sharedIO;
+};
+
 export function Reveal({
   children,
   delay = 0,
@@ -16,21 +34,13 @@ export function Reveal({
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
-    if (typeof IntersectionObserver === 'undefined') {
+    const io = getIO();
+    if (!io) {
       el.classList.add('in');
       return;
     }
-    const io = new IntersectionObserver(
-      ([entry]) => {
-        if (entry?.isIntersecting) {
-          el.classList.add('in');
-          io.disconnect();
-        }
-      },
-      { threshold: 0.12 },
-    );
     io.observe(el);
-    return () => io.disconnect();
+    return () => io.unobserve(el);
   }, []);
 
   const className = `reveal${delay ? ` delay-${delay}` : ''}`;

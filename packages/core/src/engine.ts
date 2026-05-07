@@ -113,8 +113,8 @@ export class GhostEngine {
     }
     const nodes = Array.from(this.nodes.values());
     if (nodes.length === 0) {
-      this.plan = { order: {}, emphasis: {}, hitbox: {}, ts: Date.now() };
-      for (const fn of this.listeners) fn(this.plan);
+      const empty: LayoutPlan = { order: {}, emphasis: {}, hitbox: {}, ts: Date.now() };
+      this.commit(empty);
       return;
     }
     this.inflight = true;
@@ -124,12 +124,8 @@ export class GhostEngine {
       ...(this.scoring ?? {}),
     });
     Promise.resolve(result)
-      .then((plan) => {
-        this.plan = plan;
-        for (const fn of this.listeners) fn(this.plan);
-      })
-      .catch((err) => {
-        // optimizer failure should never bring down the host app
+      .then((plan) => this.commit(plan))
+      .catch((err: unknown) => {
         console.error('[ghost-ui] optimizer error:', err);
       })
       .finally(() => {
@@ -141,9 +137,38 @@ export class GhostEngine {
       });
   }
 
+  private commit(next: LayoutPlan): void {
+    if (!planChanged(this.plan, next)) return;
+    this.plan = next;
+    for (const fn of this.listeners) fn(this.plan);
+  }
+
   /** test/debug only */
   _injectEvents(events: GhostEvent[]): void {
     this.observer.ingest(events);
     this.recompute();
   }
+}
+
+function planChanged(a: LayoutPlan, b: LayoutPlan): boolean {
+  const aZones = Object.keys(a.order);
+  const bZones = Object.keys(b.order);
+  if (aZones.length !== bZones.length) return true;
+  for (const z of bZones) {
+    const aOrder = a.order[z];
+    const bOrder = b.order[z];
+    if (!aOrder || !bOrder || aOrder.length !== bOrder.length) return true;
+    for (let i = 0; i < bOrder.length; i++) {
+      if (aOrder[i] !== bOrder[i]) return true;
+    }
+  }
+  const aIds = Object.keys(a.emphasis);
+  const bIds = Object.keys(b.emphasis);
+  if (aIds.length !== bIds.length) return true;
+  for (const id of bIds) {
+    const av = a.emphasis[id] ?? 0;
+    const bv = b.emphasis[id] ?? 0;
+    if (Math.abs(av - bv) > 0.005) return true;
+  }
+  return false;
 }

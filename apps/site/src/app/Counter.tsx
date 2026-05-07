@@ -1,6 +1,6 @@
 'use client';
 
-import { useEffect, useRef, useState } from 'react';
+import { useEffect, useRef } from 'react';
 
 export function Counter({
   value,
@@ -14,25 +14,27 @@ export function Counter({
   duration?: number;
 }) {
   const ref = useRef<HTMLSpanElement | null>(null);
-  const [n, setN] = useState(0);
 
   useEffect(() => {
     const el = ref.current;
     if (!el) return;
+    const write = (n: number) => {
+      el.textContent = `${prefix}${n}${suffix}`;
+    };
     if (window.matchMedia('(prefers-reduced-motion: reduce)').matches) {
-      setN(value);
+      write(value);
       return;
     }
+    write(0);
     const io = new IntersectionObserver(
       (entries) => {
-        const entry = entries[0];
-        if (!entry?.isIntersecting) return;
+        if (!entries[0]?.isIntersecting) return;
         const start = performance.now();
         let raf = 0;
         const tick = (now: number) => {
           const t = Math.min(1, (now - start) / duration);
-          const eased = 1 - Math.pow(1 - t, 3);
-          setN(Math.round(value * eased));
+          const eased = 1 - (1 - t) ** 3;
+          write(Math.round(value * eased));
           if (t < 1) raf = window.requestAnimationFrame(tick);
         };
         raf = window.requestAnimationFrame(tick);
@@ -42,13 +44,7 @@ export function Counter({
     );
     io.observe(el);
     return () => io.disconnect();
-  }, [value, duration]);
+  }, [value, duration, prefix, suffix]);
 
-  return (
-    <span ref={ref}>
-      {prefix}
-      {n}
-      {suffix}
-    </span>
-  );
+  return <span ref={ref} />;
 }

@@ -49,8 +49,8 @@ export function MagneticButton({ href, children, className = 'btn primary', exte
       el.style.transform = 'translate3d(0,0,0)';
     };
 
-    window.addEventListener('pointermove', onMove);
-    el.addEventListener('pointerleave', onLeave);
+    window.addEventListener('pointermove', onMove, { passive: true });
+    el.addEventListener('pointerleave', onLeave, { passive: true });
     return () => {
       window.removeEventListener('pointermove', onMove);
       el.removeEventListener('pointerleave', onLeave);

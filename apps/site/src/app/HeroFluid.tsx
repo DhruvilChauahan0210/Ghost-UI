@@ -1,14 +1,11 @@
 'use client';
 
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 
-/**
- * Full-viewport fluid noise — SVG fractal-noise texture rendered as a soft
- * violet wash. Drifts on its own via CSS transform + scale; the cursor
- * shifts the texture origin via a 3D-ish parallax. No blobs, no orbs —
- * pure procedural noise like flowing smoke.
- */
 export function HeroFluid() {
+  const ref = useRef<HTMLDivElement | null>(null);
+
+  // Cursor parallax
   useEffect(() => {
     const root = document.documentElement;
     let raf = 0;
@@ -42,11 +39,35 @@ export function HeroFluid() {
     };
   }, []);
 
+  // Pause animation + fade out when the user has scrolled past the hero —
+  // keeps GPU off-budget while the noise isn't visible behind content.
+  useEffect(() => {
+    const el = ref.current;
+    if (!el) return;
+    let scheduled = false;
+    const update = () => {
+      scheduled = false;
+      const past = window.scrollY > window.innerHeight * 0.7;
+      el.classList.toggle('is-paused', past);
+    };
+    const onScroll = () => {
+      if (scheduled) return;
+      scheduled = true;
+      window.requestAnimationFrame(update);
+    };
+    update();
+    window.addEventListener('scroll', onScroll, { passive: true });
+    window.addEventListener('resize', onScroll);
+    return () => {
+      window.removeEventListener('scroll', onScroll);
+      window.removeEventListener('resize', onScroll);
+    };
+  }, []);
+
   return (
-    <div className="fluid" aria-hidden>
+    <div ref={ref} className="fluid" aria-hidden>
       <svg className="fluid-svg" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg">
         <defs>
-          {/* Base noise — very low alpha, heavily blurred, blends with page */}
           <filter id="fluid-violet" x="-20%" y="-20%" width="140%" height="140%">
             <feTurbulence type="fractalNoise" baseFrequency="0.0065" numOctaves="2" seed="3" stitchTiles="stitch" />
             <feColorMatrix
@@ -59,7 +80,6 @@ export function HeroFluid() {
             />
             <feGaussianBlur stdDeviation="2.4" />
           </filter>
-          {/* Secondary noise — even softer cyan / pink, almost imperceptible */}
           <filter id="fluid-pink" x="-20%" y="-20%" width="140%" height="140%">
             <feTurbulence type="fractalNoise" baseFrequency="0.014" numOctaves="2" seed="11" stitchTiles="stitch" />
             <feColorMatrix

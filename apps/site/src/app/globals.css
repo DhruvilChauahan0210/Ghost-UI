@@ -57,6 +57,7 @@ body {
   z-index: 0;
   overflow: hidden;
   opacity: 0.55;
+  transition: opacity 280ms ease;
   /* Fade from top → mid, then fully gone past hero. Also fade horizontally. */
   -webkit-mask-image:
     linear-gradient(180deg, #000 0%, #000 50%, transparent 90%),
@@ -93,6 +94,8 @@ body {
   transform: translate(calc(var(--fx, 0px) * -0.5), calc(var(--fy, 0px) * -0.5));
   mix-blend-mode: screen;
 }
+.fluid.is-paused { opacity: 0; }
+.fluid.is-paused .fluid-layer { animation-play-state: paused; }
 
 @keyframes fluid-drift-a {
   0%   { transform: translate(calc(var(--fx, 0px) - 1.5%), calc(var(--fy, 0px) - 1%)) scale(1.08); }
