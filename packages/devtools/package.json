@@ -1,0 +1,38 @@
+{
+  "name": "@ghost-ui/devtools",
+  "version": "0.1.0",
+  "description": "In-page reverse-heatmap overlay for Ghost UI — see what the optimizer sees.",
+  "license": "MIT",
+  "type": "module",
+  "main": "./dist/index.js",
+  "module": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./dist/index.d.ts",
+      "import": "./dist/index.js"
+    }
+  },
+  "files": ["dist", "README.md"],
+  "scripts": {
+    "build": "tsup src/index.tsx --format esm --dts --clean --sourcemap --external react --external react-dom",
+    "dev": "tsup src/index.tsx --format esm --dts --watch --sourcemap --external react --external react-dom",
+    "typecheck": "tsc --noEmit"
+  },
+  "dependencies": {
+    "@ghost-ui/core": "workspace:*",
+    "@ghost-ui/react": "workspace:*"
+  },
+  "peerDependencies": {
+    "react": "^18.3.0 || ^19.0.0",
+    "react-dom": "^18.3.0 || ^19.0.0"
+  },
+  "devDependencies": {
+    "@types/react": "^19.0.2",
+    "@types/react-dom": "^19.0.2",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "tsup": "^8.3.5",
+    "typescript": "^5.6.3"
+  }
+}
