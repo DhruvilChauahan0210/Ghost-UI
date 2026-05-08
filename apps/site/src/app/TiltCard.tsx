@@ -64,7 +64,7 @@ export function TiltCard({
   }, [max]);
 
   return (
-    <div ref={ref} className={`tilt ${className}`} style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}>
+    <div ref={ref} className={className} style={{ transformStyle: 'preserve-3d', willChange: 'transform' }}>
       {children}
     </div>
   );

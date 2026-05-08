@@ -29,8 +29,11 @@ export function ScrollProgress() {
   }, []);
 
   return (
-    <div className="scroll-progress" aria-hidden>
-      <span ref={ref} />
+    <div className="fixed top-0 left-0 z-[60] h-px w-full bg-white/[0.04]" aria-hidden>
+      <span
+        ref={ref}
+        className="block h-full w-[var(--p,0%)] bg-gradient-to-r from-accent-2 to-accent shadow-[0_0_12px_rgba(167,139,250,0.7)]"
+      />
     </div>
   );
 }

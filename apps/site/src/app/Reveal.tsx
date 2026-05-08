@@ -10,7 +10,7 @@ const getIO = (): IntersectionObserver | null => {
     (entries) => {
       for (const entry of entries) {
         if (entry.isIntersecting) {
-          entry.target.classList.add('in');
+          entry.target.setAttribute('data-revealed', '');
           sharedIO?.unobserve(entry.target);
         }
       }
@@ -36,17 +36,22 @@ export function Reveal({
     if (!el) return;
     const io = getIO();
     if (!io) {
-      el.classList.add('in');
+      el.setAttribute('data-revealed', '');
       return;
     }
     io.observe(el);
     return () => io.unobserve(el);
   }, []);
 
-  const className = `reveal${delay ? ` delay-${delay}` : ''}`;
   return (
-    <Tag ref={ref as never} className={className}>
+    <Tag
+      ref={ref as never}
+      className="translate-y-[14px] opacity-0 transition-[opacity,transform] duration-700 ease-[cubic-bezier(0.2,0.7,0.2,1)] data-[revealed]:translate-y-0 data-[revealed]:opacity-100 motion-reduce:translate-y-0 motion-reduce:opacity-100 motion-reduce:transition-none"
+      style={delay ? { transitionDelay: `${DELAY_MS[delay]}ms` } : undefined}
+    >
       {children}
     </Tag>
   );
 }
+
+const DELAY_MS: Record<1 | 2 | 3 | 4, number> = { 1: 60, 2: 140, 3: 220, 4: 300 };
