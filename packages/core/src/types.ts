@@ -1,7 +1,10 @@
 export type GhostId = string;
 export type ZoneId = string;
 
-export type GhostEventType = 'click' | 'hover' | 'dwell' | 'miss' | 'view';
+export type GhostEventType = 'click' | 'hover' | 'dwell' | 'miss' | 'rage';
+
+/** CSS Grid area tier assigned by the optimizer. Primary = highest scored, tertiary = rest. */
+export type GravityTier = 'primary' | 'secondary' | 'tertiary';
 
 export interface GhostEvent {
   id: GhostId;
@@ -33,6 +36,10 @@ export interface LayoutPlan {
   emphasis: Record<GhostId, number>;
   /** hit-box expansion in pixels per side */
   hitbox: Record<GhostId, { top: number; right: number; bottom: number; left: number }>;
+  /** CSS Grid area tier per node — primary / secondary / tertiary */
+  area?: Record<GhostId, GravityTier>;
+  /** Normalized canvas position (0.0–1.0 of container dimensions). Used by GhostCanvas Phase B. */
+  position?: Record<GhostId, { x: number; y: number }>;
   /** generated at */
   ts: number;
 }
@@ -43,6 +50,7 @@ export interface ScoringWeights {
   dwell: number;
   recency: number;
   regret: number;
+  rage: number;
 }
 
 export const DEFAULT_WEIGHTS: ScoringWeights = {
@@ -51,4 +59,5 @@ export const DEFAULT_WEIGHTS: ScoringWeights = {
   dwell: 0.001,
   recency: 1.5,
   regret: -4,
+  rage: -6,
 };
