@@ -1,7 +1,6 @@
 import { ButtonEffects } from './ButtonEffects';
 import { CopyButton } from './CopyButton';
 import { Counter } from './Counter';
-import { HeroFluid } from './HeroFluid';
 import { LandingDemo } from './LandingDemo';
 import { MagneticButton } from './MagneticButton';
 import { MouseTracker } from './MouseTracker';
@@ -39,7 +38,6 @@ const SNIPPET_HTML = SNIPPET_LINES.map(
 export default function Page() {
   return (
     <>
-      <HeroFluid />
       <ScrollProgress />
       <ButtonEffects />
       <MouseTracker />
@@ -59,7 +57,7 @@ export default function Page() {
           </nav>
           <span className="nav-divider" aria-hidden />
           <a className="nav-cta" href="https://github.com/" target="_blank" rel="noreferrer">
-            <span className="star">★</span>
+            <span className="star" aria-hidden="true">★</span>
             <span>Star</span>
             <span className="count">1.2k</span>
           </a>
@@ -298,16 +296,16 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="section" style={{ borderTop: 'none' }}>
+        <section className="section borderless">
           <div className="container">
             <Reveal>
               <div className="cta-block">
-                <div className="section-num" style={{ justifyContent: 'center', display: 'inline-flex' }}>04 / Ship it</div>
+                <div className="section-num">04 / Ship it</div>
                 <h2>
                   Ship interfaces that get <em>sharper</em> every visit.
                 </h2>
                 <p>One npm install. Five lines of JSX. Layouts that earn their keep — on every device, with zero servers.</p>
-                <div className="cta-row" style={{ justifyContent: 'center', display: 'inline-flex' }}>
+                <div className="cta-row">
                   <MagneticButton href="https://github.com/" className="btn primary">
                     Star on GitHub <span className="arrow">→</span>
                   </MagneticButton>
@@ -334,20 +332,20 @@ export default function Page() {
                 </p>
               </div>
               <div className="foot-col">
-                <h5>Product</h5>
+                <h4>Product</h4>
                 <a href="#demo">Live demo</a>
                 <a href="#how">Architecture</a>
                 <a href="#install">Install</a>
                 <a href="#principles">Principles</a>
               </div>
               <div className="foot-col">
-                <h5>Packages</h5>
+                <h4>Packages</h4>
                 <a href="#">@ghost-ui/core <span className="ext">5kb</span></a>
                 <a href="#">@ghost-ui/react <span className="ext">12kb</span></a>
                 <a href="#">@ghost-ui/devtools <span className="ext">6kb</span></a>
               </div>
               <div className="foot-col">
-                <h5>Resources</h5>
+                <h4>Resources</h4>
                 <a href="https://github.com/" target="_blank" rel="noreferrer">GitHub</a>
                 <a href="https://x.com/" target="_blank" rel="noreferrer">X / Twitter</a>
                 <a href="#">Changelog</a>
