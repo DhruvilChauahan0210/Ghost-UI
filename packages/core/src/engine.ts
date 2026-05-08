@@ -113,8 +113,11 @@ export class GhostEngine {
     }
     const nodes = Array.from(this.nodes.values());
     if (nodes.length === 0) {
-      const empty: LayoutPlan = { order: {}, emphasis: {}, hitbox: {}, ts: Date.now() };
-      this.commit(empty);
+      // Only commit empty if there's no existing plan — nodes may be
+      // transiently unregistered (React Strict Mode cleanup/remount).
+      if (Object.keys(this.plan.order).length === 0) {
+        this.commit({ order: {}, emphasis: {}, hitbox: {}, ts: Date.now() });
+      }
       return;
     }
     this.inflight = true;

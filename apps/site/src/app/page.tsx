@@ -1,6 +1,6 @@
 import { ButtonEffects } from './ButtonEffects';
-import { CopyButton } from './CopyButton';
 import { Counter } from './Counter';
+import { InstallTabs } from './InstallTabs';
 import { LandingDemo } from './LandingDemo';
 import { MagneticButton } from './MagneticButton';
 import { MouseTracker } from './MouseTracker';
@@ -51,6 +51,7 @@ export default function Page() {
           </a>
           <span className="nav-divider" aria-hidden />
           <nav className="nav-links">
+            <a href="#how-it-works">How it works</a>
             <a href="#how">Architecture</a>
             <a href="#install">Install</a>
             <a href="#principles">Principles</a>
@@ -92,8 +93,8 @@ export default function Page() {
                 </a>
               </div>
               <div className="cta-meta">
-                <span>Click any button below — it reorders.</span>
-                <span style={{ color: 'var(--muted-2)' }}>·</span>
+                <span>Use the app below — the toolbar learns your habits.</span>
+                <span className="cta-meta-sep">·</span>
                 <span>Press <span className="kbd">⌘ .</span> for devtools.</span>
               </div>
             </Reveal>
@@ -127,11 +128,59 @@ export default function Page() {
           </div>
         </section>
 
+        <section className="section" id="how-it-works">
+          <div className="container">
+            <Reveal>
+              <div className="section-head">
+                <div className="section-num">01 / How it works</div>
+                <h2 className="section-title">
+                  Four steps. <span className="italic-accent">Zero</span> servers.
+                </h2>
+                <p className="section-sub">
+                  Every interaction stays on-device. Ghost observes, scores, reorders — and remembers — without touching a network.
+                </p>
+              </div>
+            </Reveal>
+            <Reveal delay={1}>
+              <div className="hiw-grid">
+                <HiwCard
+                  step="01"
+                  icon={<HiwCursorIcon />}
+                  title="You click"
+                  body="Events are captured in a local ring buffer — clicks, hovers, dwell time, near-misses. Zero network requests, ever."
+                  viz={<HiwClickViz />}
+                />
+                <HiwCard
+                  step="02"
+                  icon={<HiwChartIcon />}
+                  title="Scores update"
+                  body="A half-life decay function recalculates each button's score. Recent interactions weigh more than old ones."
+                  viz={<HiwScoreViz />}
+                />
+                <HiwCard
+                  step="03"
+                  icon={<HiwShuffleIcon />}
+                  title="Layout reorders"
+                  body="The optimizer runs its pure scoring function and promotes the highest-scoring item to position one."
+                  viz={<HiwReorderViz />}
+                />
+                <HiwCard
+                  step="04"
+                  icon={<HiwDbIcon />}
+                  title="Persists locally"
+                  body="Scores and events are written to localStorage. The layout survives refresh — on every device, with zero servers."
+                  viz={<HiwPersistViz />}
+                />
+              </div>
+            </Reveal>
+          </div>
+        </section>
+
         <section className="section" id="how">
           <div className="container">
             <Reveal>
               <div className="section-head">
-                <div className="section-num">01 / Architecture</div>
+                <div className="section-num">02 / Architecture</div>
                 <h2 className="section-title">
                   Three layers. <span className="italic-accent">Pure</span> functions where it counts.
                 </h2>
@@ -197,7 +246,7 @@ export default function Page() {
           <div className="container">
             <Reveal>
               <div className="section-head">
-                <div className="section-num">02 / Install</div>
+                <div className="section-num">03 / Install</div>
                 <h2 className="section-title">
                   That&rsquo;s the <span className="italic-accent">whole</span> API.
                 </h2>
@@ -208,25 +257,7 @@ export default function Page() {
               </div>
             </Reveal>
             <Reveal delay={1}>
-              <div className="mac mac-code">
-                <div className="mac-titlebar">
-                  <div className="mac-controls">
-                    <span className="mac-dot close" />
-                    <span className="mac-dot min" />
-                    <span className="mac-dot max" />
-                  </div>
-                  <div className="mac-title">app/page.tsx — Ghost UI</div>
-                </div>
-                <div className="code-head">
-                  <div className="code-tabs">
-                    <span className="code-tab active">app/page.tsx</span>
-                    <span className="code-tab">npm</span>
-                    <span className="code-tab">pnpm</span>
-                  </div>
-                  <CopyButton text={SNIPPET_PLAIN} />
-                </div>
-                <pre className="snippet" dangerouslySetInnerHTML={{ __html: SNIPPET_HTML }} />
-              </div>
+              <InstallTabs snippetHtml={SNIPPET_HTML} snippetPlain={SNIPPET_PLAIN} />
             </Reveal>
           </div>
         </section>
@@ -235,7 +266,7 @@ export default function Page() {
           <div className="container">
             <Reveal>
               <div className="section-head">
-                <div className="section-num">03 / Principles</div>
+                <div className="section-num">04 / Principles</div>
                 <h2 className="section-title">
                   Boring choices, on <span className="italic-accent">purpose.</span>
                 </h2>
@@ -300,7 +331,7 @@ export default function Page() {
           <div className="container">
             <Reveal>
               <div className="cta-block">
-                <div className="section-num">04 / Ship it</div>
+                <div className="section-num">05 / Ship it</div>
                 <h2>
                   Ship interfaces that get <em>sharper</em> every visit.
                 </h2>
@@ -392,23 +423,14 @@ export default function Page() {
 
 function MacWindow() {
   return (
-    <div className="mac">
+    <div className="mac mac-demo-host">
       <div className="mac-titlebar">
         <div className="mac-controls">
           <span className="mac-dot close" />
           <span className="mac-dot min" />
           <span className="mac-dot max" />
         </div>
-        <div className="mac-title">Ghost UI — Live Dashboard</div>
-      </div>
-      <div className="mac-toolbar">
-        <div className="mac-segment">
-          <span className="seg active">Live</span>
-          <span className="seg">Events</span>
-          <span className="seg">Plan</span>
-        </div>
-        <div className="mac-url">ghost-ui.dev</div>
-        <div className="mac-toolbar-spacer" />
+        <div className="mac-title">Issues — ghost-ui / core</div>
       </div>
       <div className="mac-body">
         <LandingDemo />
@@ -710,3 +732,179 @@ function SparkIcon() { return (<svg width="14" height="14" viewBox="0 0 24 24" f
 function GridIcon() { return (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><rect x="3" y="3" width="18" height="18" rx="3" /><path d="M9 3v18M3 9h18" /></svg>); }
 function ClockIcon() { return (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><circle cx="12" cy="12" r="9" /><path d="M12 7v5l3 3" /></svg>); }
 function TerminalIcon() { return (<svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2"><path d="M4 6l4 4-4 4M11 16h9" /><rect x="2" y="3" width="20" height="18" rx="2" /></svg>); }
+
+/* ── How it works ───────────────────────────────────────────────────────── */
+
+function HiwCard({
+  step,
+  icon,
+  title,
+  body,
+  viz,
+}: {
+  step: string;
+  icon: React.ReactNode;
+  title: string;
+  body: string;
+  viz: React.ReactNode;
+}) {
+  return (
+    <div className="hiw-card">
+      <div className="hiw-viz">{viz}</div>
+      <div className="hiw-meta">
+        <span className="hiw-step-num">{step}</span>
+        <span className="hiw-icon" aria-hidden>{icon}</span>
+      </div>
+      <div className="hiw-step-title">{title}</div>
+      <p className="hiw-step-body">{body}</p>
+    </div>
+  );
+}
+
+/* Card 1 — click animation */
+function HiwClickViz() {
+  return (
+    <svg className="hiw-click-svg" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      {/* Button shape */}
+      <rect className="hiw-btn-rect" x="30" y="28" width="60" height="24" rx="6"
+        stroke="rgba(196,181,253,0.5)" strokeWidth="1.2"
+        fill="rgba(196,181,253,0.08)" />
+      <text x="60" y="44" textAnchor="middle" fontSize="9"
+        fill="rgba(196,181,253,0.75)" fontFamily="ui-monospace,monospace">Resolve</text>
+      {/* +1 badge */}
+      <g className="hiw-badge">
+        <circle cx="80" cy="24" r="8" fill="rgba(139,92,246,0.85)" />
+        <text x="80" y="27.5" textAnchor="middle" fontSize="8"
+          fill="#fff" fontFamily="ui-monospace,monospace" fontWeight="600">+1</text>
+      </g>
+    </svg>
+  );
+}
+
+/* Card 2 — scores bar chart */
+function HiwScoreViz() {
+  return (
+    <svg className="hiw-score-svg" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      {/* Label + bar rows */}
+      {/* Row 1 — Resolve (animates wide) */}
+      <text x="10" y="24" fontSize="7.5" fill="rgba(255,255,255,0.38)" fontFamily="ui-monospace,monospace">Resolve</text>
+      <rect x="52" y="16" width="58" height="9" rx="2" fill="rgba(255,255,255,0.05)" />
+      <rect className="hiw-bar-1" x="52" y="16" height="9" rx="2"
+        fill="url(#hiwGrad)" />
+      {/* Row 2 — Comment */}
+      <text x="10" y="42" fontSize="7.5" fill="rgba(255,255,255,0.38)" fontFamily="ui-monospace,monospace">Comment</text>
+      <rect x="52" y="34" width="58" height="9" rx="2" fill="rgba(255,255,255,0.05)" />
+      <rect x="52" y="34" width="18" height="9" rx="2" fill="rgba(139,92,246,0.28)" />
+      {/* Row 3 — Assign */}
+      <text x="10" y="60" fontSize="7.5" fill="rgba(255,255,255,0.38)" fontFamily="ui-monospace,monospace">Assign</text>
+      <rect x="52" y="52" width="58" height="9" rx="2" fill="rgba(255,255,255,0.05)" />
+      <rect x="52" y="52" width="10" height="9" rx="2" fill="rgba(139,92,246,0.18)" />
+      <defs>
+        <linearGradient id="hiwGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#8b5cf6" />
+          <stop offset="100%" stopColor="#c4b5fd" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+/* Card 3 — layout reorder boxes */
+function HiwReorderViz() {
+  return (
+    <svg className="hiw-reorder-svg" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      {/* Box A */}
+      <g className="hiw-box-a">
+        <rect width="30" height="22" rx="4"
+          stroke="rgba(196,181,253,0.55)" strokeWidth="1.2"
+          fill="rgba(196,181,253,0.10)" />
+        <text x="15" y="15" textAnchor="middle" fontSize="9"
+          fill="rgba(196,181,253,0.9)" fontFamily="ui-monospace,monospace" fontWeight="600">A</text>
+      </g>
+      {/* Box B */}
+      <g className="hiw-box-b">
+        <rect width="30" height="22" rx="4"
+          stroke="rgba(255,255,255,0.12)" strokeWidth="1.2"
+          fill="rgba(255,255,255,0.04)" />
+        <text x="15" y="15" textAnchor="middle" fontSize="9"
+          fill="rgba(255,255,255,0.45)" fontFamily="ui-monospace,monospace" fontWeight="600">B</text>
+      </g>
+      {/* Box C */}
+      <g className="hiw-box-c">
+        <rect width="30" height="22" rx="4"
+          stroke="rgba(255,255,255,0.12)" strokeWidth="1.2"
+          fill="rgba(255,255,255,0.04)" />
+        <text x="15" y="15" textAnchor="middle" fontSize="9"
+          fill="rgba(255,255,255,0.45)" fontFamily="ui-monospace,monospace" fontWeight="600">C</text>
+      </g>
+      {/* Arrow */}
+      <path className="hiw-arrow" d="M60 40 L78 40" stroke="rgba(196,181,253,0.4)" strokeWidth="1.2" strokeLinecap="round" markerEnd="url(#hiwArrowHead)" />
+      <defs>
+        <marker id="hiwArrowHead" markerWidth="6" markerHeight="6" refX="5" refY="3" orient="auto">
+          <path d="M0 0 L6 3 L0 6 Z" fill="rgba(196,181,253,0.4)" />
+        </marker>
+      </defs>
+    </svg>
+  );
+}
+
+/* Card 4 — persist storage */
+function HiwPersistViz() {
+  return (
+    <svg className="hiw-persist-svg" viewBox="0 0 120 80" fill="none" xmlns="http://www.w3.org/2000/svg" aria-hidden>
+      {/* Storage cylinder outline */}
+      <ellipse cx="60" cy="22" rx="32" ry="8" stroke="rgba(196,181,253,0.4)" strokeWidth="1.2" fill="rgba(196,181,253,0.06)" />
+      <rect x="28" y="22" width="64" height="30" fill="rgba(196,181,253,0.04)" stroke="none" />
+      <line x1="28" y1="22" x2="28" y2="52" stroke="rgba(196,181,253,0.4)" strokeWidth="1.2" />
+      <line x1="92" y1="22" x2="92" y2="52" stroke="rgba(196,181,253,0.4)" strokeWidth="1.2" />
+      <ellipse cx="60" cy="52" rx="32" ry="8" stroke="rgba(196,181,253,0.4)" strokeWidth="1.2" fill="rgba(196,181,253,0.06)" />
+      {/* 247 events text */}
+      <text x="60" y="40" textAnchor="middle" fontSize="9"
+        fill="rgba(196,181,253,0.85)" fontFamily="ui-monospace,monospace" fontWeight="600">247 events</text>
+      {/* progress bar */}
+      <rect x="36" y="46" width="48" height="4" rx="2" fill="rgba(255,255,255,0.05)" />
+      <rect className="hiw-persist-bar" x="36" y="46" height="4" rx="2" fill="url(#hiwPGrad)" />
+      <defs>
+        <linearGradient id="hiwPGrad" x1="0" y1="0" x2="1" y2="0">
+          <stop offset="0%" stopColor="#8b5cf6" />
+          <stop offset="100%" stopColor="#c4b5fd" />
+        </linearGradient>
+      </defs>
+    </svg>
+  );
+}
+
+/* How it works — step icons */
+function HiwCursorIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M4 4l7.5 18 3-7 7-3z" />
+      <path d="M14.5 14.5l4.5 4.5" />
+    </svg>
+  );
+}
+function HiwChartIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M3 20h18M7 20V10M12 20V4M17 20v-6" />
+    </svg>
+  );
+}
+function HiwShuffleIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <path d="M16 3h5v5M4 20l16-16" />
+      <path d="M21 16v5h-5M4 4l6 6" />
+      <path d="M14 14l7 7" />
+    </svg>
+  );
+}
+function HiwDbIcon() {
+  return (
+    <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.8" strokeLinecap="round" strokeLinejoin="round">
+      <ellipse cx="12" cy="5" rx="9" ry="3" />
+      <path d="M21 12c0 1.66-4.03 3-9 3S3 13.66 3 12" />
+      <path d="M3 5v14c0 1.66 4.03 3 9 3s9-1.34 9-3V5" />
+    </svg>
+  );
+}
