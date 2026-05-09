@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, type ReactNode } from 'react';
-import { GhostProvider, Ghost, useGhostEngine } from '@ghost-ui/react';
+import { GhostProvider, Ghost, GhostMenu, useGhostEngine } from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
 import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 
@@ -285,14 +285,6 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
 }) {
   const navLabel = NAV_ITEMS.find(n => n.id === activeNav)?.label ?? 'All Issues';
 
-  const tabs: Array<{ value: Status | 'all'; label: string }> = [
-    { value: 'all',         label: 'All' },
-    { value: 'todo',        label: 'Todo' },
-    { value: 'in-progress', label: 'In Progress' },
-    { value: 'in-review',   label: 'In Review' },
-    { value: 'done',        label: 'Done' },
-  ];
-
   const countFor = (v: Status | 'all') =>
     v === 'all' ? ISSUES.length : ISSUES.filter(i => i.status === v).length;
 
@@ -321,26 +313,36 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
         </div>
       </div>
 
-      {/* Status tabs */}
-      <div className="flex items-center gap-0.5 px-4 h-9 border-b border-white/[0.04] flex-none">
-        {tabs.map(tab => (
-          <button
-            key={tab.value}
-            onClick={() => setFilterStatus(tab.value)}
-            className={[
-              'flex items-center gap-1.5 h-6 px-2.5 rounded-lg text-[11.5px] font-medium transition-colors cursor-pointer',
-              filterStatus === tab.value
-                ? 'bg-[#5c5ef0]/[0.14] text-[#a5a7ff]'
-                : 'text-[#5a5a72] hover:text-[#b8b8cc] hover:bg-white/[0.04]',
-            ].join(' ')}
-          >
-            {tab.label}
-            <span className={['text-[10px] tabular-nums font-mono transition-colors', filterStatus === tab.value ? 'text-[#8b8df8]/70' : 'text-[#2e2e42]'].join(' ')}>
-              {countFor(tab.value)}
-            </span>
-          </button>
-        ))}
-      </div>
+      {/* Ghost.Tab status filter strip */}
+      <Ghost.Tab
+        zone="orbit.status-tabs"
+        activeTab={filterStatus}
+        onTabChange={(id) => setFilterStatus(id as Status | 'all')}
+      >
+        <Ghost.Tab.List className="flex items-center gap-0.5 px-4 h-9 border-b border-white/[0.04] flex-none">
+          {(['all', 'todo', 'in-progress', 'in-review', 'done'] as const).map((value) => {
+            const label = value === 'all' ? 'All' : value === 'in-progress' ? 'In Progress' : value === 'in-review' ? 'In Review' : value.charAt(0).toUpperCase() + value.slice(1);
+            const isActive = filterStatus === value;
+            return (
+              <Ghost.Tab.Item
+                key={value}
+                id={value}
+                className={[
+                  'flex items-center gap-1.5 h-6 px-2.5 rounded-lg text-[11.5px] font-medium transition-colors cursor-pointer border-0 outline-none',
+                  isActive
+                    ? 'bg-[#5c5ef0]/[0.14] text-[#a5a7ff]'
+                    : 'text-[#5a5a72] hover:text-[#b8b8cc] hover:bg-white/[0.04]',
+                ].join(' ')}
+              >
+                {label}
+                <span className={['text-[10px] tabular-nums font-mono transition-colors', isActive ? 'text-[#8b8df8]/70' : 'text-[#2e2e42]'].join(' ')}>
+                  {countFor(value)}
+                </span>
+              </Ghost.Tab.Item>
+            );
+          })}
+        </Ghost.Tab.List>
+      </Ghost.Tab>
 
       {/* Issue rows */}
       <div className="flex-1 overflow-y-auto">
@@ -359,23 +361,27 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
             const isSelected = selected?.id === issue.id;
 
             return (
-              <button
+              <div
                 key={issue.id}
-                onClick={() => onSelect(issue)}
                 className={[
-                  'relative w-full flex items-center gap-3 px-4 h-9 border-b text-left transition-all group cursor-pointer',
+                  'relative w-full flex items-center gap-3 px-4 h-9 border-b text-left transition-all group',
                   isSelected
                     ? 'bg-[#5c5ef0]/[0.08] border-white/[0.06]'
                     : 'border-white/[0.035] hover:bg-white/[0.025]',
                 ].join(' ')}
               >
                 <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r ${pm.bar}`} />
-                <span style={{ color: sm.color }} className="flex-none shrink-0"><sm.Icon /></span>
-                <span className="text-[10px] text-[#3a3a52] font-mono w-[56px] flex-none tabular-nums shrink-0 tracking-tight">{issue.id}</span>
-                <span className={[
-                  'text-[12.5px] flex-1 truncate leading-none transition-colors',
-                  isSelected ? 'text-[#e6e6f0]' : 'text-[#a8a8c2] group-hover:text-[#d0d0e4]',
-                ].join(' ')}>{issue.title}</span>
+                <button
+                  onClick={() => onSelect(issue)}
+                  className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer bg-transparent border-0 outline-none text-left h-full"
+                >
+                  <span style={{ color: sm.color }} className="flex-none shrink-0"><sm.Icon /></span>
+                  <span className="text-[10px] text-[#3a3a52] font-mono w-[56px] flex-none tabular-nums shrink-0 tracking-tight">{issue.id}</span>
+                  <span className={[
+                    'text-[12.5px] flex-1 truncate leading-none transition-colors',
+                    isSelected ? 'text-[#e6e6f0]' : 'text-[#a8a8c2] group-hover:text-[#d0d0e4]',
+                  ].join(' ')}>{issue.title}</span>
+                </button>
                 <div className="flex items-center gap-2 flex-none">
                   {issue.labels.slice(0, 1).map(l => (
                     <span key={l} className={lc(l)}>{l}</span>
@@ -384,12 +390,55 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
                     {issue.initials}
                   </div>
                   <span className="text-[10px] text-[#2e2e42] w-9 text-right tabular-nums font-mono">{issue.updatedAt}</span>
+                  {/* Ghost.Menu context actions — same zone as Quick Actions */}
+                  <IssueRowMenu issue={issue} />
                 </div>
-              </button>
+              </div>
             );
           })
         )}
       </div>
+    </div>
+  );
+}
+
+function IssueRowMenu({ issue }: { issue: Issue }) {
+  const [hovered, setHovered] = useState(false);
+
+  return (
+    <div
+      className="relative flex-none"
+      onMouseEnter={() => setHovered(true)}
+      onMouseLeave={() => setHovered(false)}
+    >
+      <GhostMenu zone="orbit.actions">
+        <GhostMenu.Trigger>
+          <button
+            className={[
+              'h-5 w-5 flex items-center justify-center rounded text-[#2e2e42] hover:text-[#8b8df8] hover:bg-[#5c5ef0]/[0.12] transition-all cursor-pointer border-0 outline-none',
+              hovered ? 'opacity-100' : 'opacity-0 group-hover:opacity-100',
+            ].join(' ')}
+            aria-label={`Actions for ${issue.id}`}
+          >
+            <IcDots />
+          </button>
+        </GhostMenu.Trigger>
+        <GhostMenu.Content placement="bottom-end">
+          {ISSUE_ACTIONS.map(action => (
+            <GhostMenu.Item
+              key={action.id}
+              id={action.id}
+              icon={<action.Icon />}
+            >
+              {action.label}
+            </GhostMenu.Item>
+          ))}
+          <GhostMenu.Separator />
+          <GhostMenu.Item id="act-delete" variant="danger" icon={<IcXCircle />}>
+            Delete issue
+          </GhostMenu.Item>
+        </GhostMenu.Content>
+      </GhostMenu>
     </div>
   );
 }

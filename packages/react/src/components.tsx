@@ -410,6 +410,7 @@ export function GhostCanvas({ zone: _zone, children, style, ...rest }: GhostCanv
 }
 
 import { GhostMenu } from './menu.js';
+import { GhostTab } from './tabs.js';
 
 export const Ghost = {
   Slot: GhostSlot,
@@ -418,4 +419,5 @@ export const Ghost = {
   Grid: GhostGrid,
   Canvas: GhostCanvas,
   Menu: GhostMenu,
+  Tab: GhostTab,
 };
