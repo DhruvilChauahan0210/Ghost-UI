@@ -1425,7 +1425,7 @@ export function App(): ReactNode {
     { id: 'cmd-overview',  label: 'Overview',         group: 'Navigate',                 onSelect: () => setNav('overview')  },
     { id: 'cmd-twitter',   label: 'Post to Twitter/X',group: 'Quick Post',               onSelect: () => setNav('create')    },
     { id: 'cmd-instagram', label: 'Post to Instagram',group: 'Quick Post',               onSelect: () => setNav('create')    },
-    { id: 'cmd-drafts',    label: 'View Drafts',      group: 'Navigate',                 onSelect: () => {}                  },
+    { id: 'cmd-drafts',    label: 'View Drafts',      group: 'Navigate',                 onSelect: () => setNav('scheduled') },
   ];
 
   return (

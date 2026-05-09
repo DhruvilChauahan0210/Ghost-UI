@@ -125,12 +125,14 @@ function OrbitShell() {
   const [activeNav, setActiveNav] = useState('nav-all');
   const [selected, setSelected] = useState<Issue | null>(ISSUES[0] ?? null);
   const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
+  const [assigneeFilter, setAssigneeFilter] = useState('');
   const { toast } = useGhostToast();
 
   const visible = useMemo(() => {
     const base = activeNav === 'nav-my' ? ISSUES.filter(i => i.initials === 'MC') : ISSUES;
-    return filterStatus === 'all' ? base : base.filter(i => i.status === filterStatus);
-  }, [activeNav, filterStatus]);
+    const byStatus = filterStatus === 'all' ? base : base.filter(i => i.status === filterStatus);
+    return assigneeFilter ? byStatus.filter(i => i.assignee === assigneeFilter) : byStatus;
+  }, [activeNav, filterStatus, assigneeFilter]);
 
   const commands: GhostCommand[] = useMemo(() => [
     { id: 'nav-inbox',   label: 'Go to Inbox',         group: 'Navigate', onSelect: () => { setActiveNav('nav-inbox');   setFilterStatus('all'); } },
@@ -162,6 +164,8 @@ function OrbitShell() {
           filterStatus={filterStatus}
           setFilterStatus={setFilterStatus}
           activeNav={activeNav}
+          assigneeFilter={assigneeFilter}
+          setAssigneeFilter={setAssigneeFilter}
         />
         {selected ? (
           <DetailPanel
@@ -319,13 +323,15 @@ const ASSIGNEES = [
   { id: 'assignee-at', initials: 'AT', name: 'Alex Torres', ...AVATAR_CFG.AT },
 ];
 
-function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, activeNav }: {
+function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, activeNav, assigneeFilter, setAssigneeFilter }: {
   issues: Issue[];
   selected: Issue | null;
   onSelect: (i: Issue) => void;
   filterStatus: Status | 'all';
   setFilterStatus: (s: Status | 'all') => void;
   activeNav: string;
+  assigneeFilter: string;
+  setAssigneeFilter: (name: string) => void;
 }) {
   const { toast } = useGhostToast();
   const navLabel = NAV_ITEMS.find(n => n.id === activeNav)?.label ?? 'All Issues';
@@ -390,7 +396,7 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
           <Ghost.Combobox
             zone="orbit.assignee-filter"
             onQueryChange={setAssigneeQuery}
-            onSelect={(_, val) => setAssigneeQuery(val === 'All' ? '' : val)}
+            onSelect={(_, val) => { setAssigneeQuery(''); setAssigneeFilter(assigneeFilter === val ? '' : val); }}
             className="relative"
           >
             <Ghost.Combobox.Input
@@ -726,7 +732,7 @@ function DetailPanel({ issue, onClose }: {
               <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">Status</p>
               <Ghost.Select
                 zone="orbit.select-status"
-                value={selectedStatus}
+                value={STATUS_CFG[selectedStatus].label}
                 onValueChange={(id) => setSelectedStatus(id as Status)}
                 className="w-full"
               >
@@ -750,7 +756,7 @@ function DetailPanel({ issue, onClose }: {
               <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">Priority</p>
               <Ghost.Select
                 zone="orbit.select-priority"
-                value={selectedPriority}
+                value={PRIORITY_CFG[selectedPriority].label}
                 onValueChange={(id) => setSelectedPriority(id as Priority)}
                 className="w-full"
               >

@@ -51,6 +51,9 @@ export function App() {
   );
 }
 
+type FilterBadge = 'All' | 'New' | 'Sale' | 'Exclusive';
+const BADGE_CYCLE: FilterBadge[] = ['All', 'New', 'Sale', 'Exclusive'];
+
 function LuxeApp() {
   const [category, setCategory] = useState('All');
   const [sortBy, setSortBy] = useState('sort-new');
@@ -59,16 +62,18 @@ function LuxeApp() {
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const [quickView, setQuickView] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<Record<string, string>>({});
+  const [filterBadge, setFilterBadge] = useState<FilterBadge>('All');
 
   const filtered = useMemo(() => {
     const base = category === 'All' ? PRODUCTS : PRODUCTS.filter(p => p.category === category);
-    return [...base].sort((a, b) => {
+    const byBadge = filterBadge === 'All' ? base : base.filter(p => p.badge === filterBadge);
+    return [...byBadge].sort((a, b) => {
       if (sortBy === 'sort-price-asc') return a.price - b.price;
       if (sortBy === 'sort-price-desc') return b.price - a.price;
       if (sortBy === 'sort-name') return a.name.localeCompare(b.name);
       return 0;
     });
-  }, [category, sortBy]);
+  }, [category, sortBy, filterBadge]);
 
   function handleAction(actionId: string, product: Product) {
     if (actionId === 'act-bag') setCart(p => new Set([...p, product.id]));
@@ -82,7 +87,7 @@ function LuxeApp() {
       <SiteHeader cartCount={cart.size} wishlistCount={wishlist.size} />
       <CategoryNav category={category} setCategory={setCategory} />
       <main className="max-w-[1400px] mx-auto px-8 py-10">
-        <CollectionHeader category={category} count={filtered.length} sortBy={sortBy} setSortBy={setSortBy} viewLayout={viewLayout} setViewLayout={setViewLayout} />
+        <CollectionHeader category={category} count={filtered.length} sortBy={sortBy} setSortBy={setSortBy} viewLayout={viewLayout} setViewLayout={setViewLayout} filterBadge={filterBadge} setFilterBadge={setFilterBadge} />
         <GhostHintBar />
         <div className={[
           'mt-6',
@@ -207,8 +212,12 @@ function CategoryNav({ category, setCategory }: { category: string; setCategory:
   );
 }
 
-function CollectionHeader({ category, count, sortBy, setSortBy, viewLayout, setViewLayout }: { category: string; count: number; sortBy: string; setSortBy: (id: string) => void; viewLayout: 'grid' | 'list'; setViewLayout: (v: 'grid' | 'list') => void }) {
+function CollectionHeader({ category, count, sortBy, setSortBy, viewLayout, setViewLayout, filterBadge, setFilterBadge }: { category: string; count: number; sortBy: string; setSortBy: (id: string) => void; viewLayout: 'grid' | 'list'; setViewLayout: (v: 'grid' | 'list') => void; filterBadge: FilterBadge; setFilterBadge: (f: FilterBadge) => void }) {
   const title = category === 'All' ? 'The Summer Edit' : category;
+  function cycleFilter() {
+    const idx = BADGE_CYCLE.indexOf(filterBadge);
+    setFilterBadge(BADGE_CYCLE[(idx + 1) % BADGE_CYCLE.length]!);
+  }
   return (
     <div className="flex items-end justify-between pb-6 border-b border-[#1a1714]/[0.08]">
       <div>
@@ -234,7 +243,16 @@ function CollectionHeader({ category, count, sortBy, setSortBy, viewLayout, setV
             className={`p-1.5 rounded transition-colors cursor-pointer ${viewLayout === 'list' ? 'text-[#c9a05a] bg-[#1a1208]' : 'text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208]'}`}
           >☰</Ghost.Toolbar.Button>
           <Ghost.Toolbar.Separator className="w-px h-4 bg-[#2a1e0a] mx-1" />
-          <Ghost.Toolbar.Button id="tb-filter" zone="luxe.grid-toolbar" className="px-2 py-1 rounded text-[10px] text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208] transition-colors cursor-pointer">Filter</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button
+            id="tb-filter" zone="luxe.grid-toolbar"
+            onClick={cycleFilter}
+            className="flex items-center gap-1.5 px-2 py-1 rounded text-[10px] hover:text-[#c9a05a] hover:bg-[#1a1208] transition-colors cursor-pointer text-[#5a4a2a]"
+          >
+            Filter
+            {filterBadge !== 'All' && (
+              <span className="px-1.5 py-0.5 rounded text-[8.5px] font-semibold tracking-[0.06em] uppercase bg-[#b5892a]/20 text-[#c9a05a] border border-[#b5892a]/30">{filterBadge}</span>
+            )}
+          </Ghost.Toolbar.Button>
         </Ghost.Toolbar>
         <Ghost.Select zone="luxe.sort" value={sortBy} onValueChange={(id) => setSortBy(id)} placeholder="Sort by…" className="w-36">
           <Ghost.Select.Trigger className="px-3 py-1.5 rounded-lg border border-[#2a1e0a] bg-[#110d06] text-[11px] text-[#8a7450] text-left" />
@@ -437,6 +455,16 @@ function QuickViewModal({ product, inCart, inWishlist, onAction, onClose }: {
   onClose: () => void;
 }) {
   const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
+  const [sizeWarning, setSizeWarning] = useState(false);
+
+  function handleAddToBag() {
+    if (product.sizes.length > 1 && selectedSizes.length === 0) {
+      setSizeWarning(true);
+      setTimeout(() => setSizeWarning(false), 3000);
+      return;
+    }
+    onAction('act-bag');
+  }
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
@@ -517,9 +545,13 @@ function QuickViewModal({ product, inCart, inWishlist, onAction, onClose }: {
             <p className="text-[12px] text-[#b53a22] mb-3 font-medium">{product.scarcity}</p>
           )}
 
+          {sizeWarning && (
+            <p className="text-[12px] text-[#b53a22] font-medium mb-2">Please select a size</p>
+          )}
+
           <div className="flex flex-col gap-2 mt-auto">
             <button
-              onClick={() => onAction('act-bag')}
+              onClick={handleAddToBag}
               className={[
                 'w-full py-3.5 text-[12px] font-semibold tracking-[0.08em] uppercase transition-colors cursor-pointer border-0',
                 inCart ? 'bg-[#22a352] text-white' : 'bg-[#1a1714] text-white hover:bg-[#333]',

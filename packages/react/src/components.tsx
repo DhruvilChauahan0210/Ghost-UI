@@ -312,17 +312,31 @@ export function GhostGrid({
 
   const slots = useMemo(() => {
     const arr = Children.toArray(children).filter(isValidElement) as ReactElement<{ id?: string }>[];
-    return arr.map((child) => {
+
+    const TIER_PRIORITY: Record<GravityTier, number> = { primary: 0, secondary: 1, tertiary: 2 };
+    const TIER_SLOTS: GravityTier[] = ['primary', 'secondary', 'tertiary'];
+
+    const ranked = arr.map((child, index) => {
       const id = getId(child);
       const tier: GravityTier = (id ? plan.area?.[id] : undefined) ?? 'tertiary';
+      return { child, id, tier, index };
+    });
+
+    ranked.sort((a, b) => {
+      const diff = TIER_PRIORITY[a.tier] - TIER_PRIORITY[b.tier];
+      return diff !== 0 ? diff : a.index - b.index;
+    });
+
+    return ranked.map(({ child, id }, sortedIdx) => {
+      const assignedTier: GravityTier = TIER_SLOTS[sortedIdx] ?? 'tertiary';
       return (
         <div
           key={id || undefined}
-          data-ghost-grid-tier={tier}
+          data-ghost-grid-tier={assignedTier}
           style={{
-            gridArea: tier,
+            gridArea: assignedTier,
             borderRadius: 8,
-            background: TIER_COLORS[tier],
+            background: TIER_COLORS[assignedTier],
             transition: 'background 400ms ease',
           }}
         >
