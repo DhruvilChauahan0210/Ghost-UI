@@ -1,22 +1,22 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg:          #0a0a0a;
-  --color-bg-elev:     #111111;
-  --color-bg-card:     #161616;
-  --color-fg:          #f5f5f0;
-  --color-muted:       #888880;
-  --color-muted-2:     #555550;
-  --color-line:        rgba(255, 255, 255, 0.06);
-  --color-line-2:      rgba(255, 255, 255, 0.10);
-  --color-line-3:      rgba(255, 255, 255, 0.16);
+  --color-bg:       #060604;
+  --color-surface:  #0b0b09;
+  --color-card:     #101010;
+  --color-fg:       #ede8df;
+  --color-muted:    #88837a;
+  --color-faint:    #47443e;
 
-  --color-accent:      #c4b5fd;
-  --color-accent-2:    #8b5cf6;
-  --color-accent-glow: rgba(167, 139, 250, 0.35);
+  --color-line:     rgba(255, 255, 255, 0.055);
+  --color-line-2:   rgba(255, 255, 255, 0.095);
 
-  --color-gold:        #d4af6e;
-  --color-gold-muted:  rgba(212, 175, 110, 0.15);
+  --color-gold:     #c4a35a;
+  --color-gold-2:   #e8c97e;
+  --color-gold-dim: rgba(196, 163, 90, 0.12);
+
+  --font-sans:    'Jost', ui-sans-serif, system-ui, sans-serif;
+  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
 }
 
 :root { color-scheme: dark; }
@@ -24,31 +24,32 @@
 *, *::before, *::after { box-sizing: border-box; }
 
 html, body, #root {
-  height: 100%;
+  min-height: 100%;
   margin: 0;
 }
 
 body {
-  background: #0a0a0a;
-  color: #f5f5f0;
+  background: #060604;
+  color: #ede8df;
+  font-family: 'Jost', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  overflow-x: hidden;
+  -moz-osx-font-smoothing: grayscale;
+  font-weight: 300;
 }
 
-::selection { background: rgba(167, 139, 250, 0.35); color: #fff; }
+::selection { background: rgba(196, 163, 90, 0.28); color: #ede8df; }
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(16px); }
+  from { opacity: 0; transform: translateY(20px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes actions-reveal {
+  from { opacity: 0; transform: translateY(8px); }
   to   { opacity: 1; transform: none; }
 }
 
 @keyframes shimmer {
   0%   { background-position: -200% 0; }
   100% { background-position: 200% 0; }
-}
-
-@keyframes ghost-lift {
-  0%   { box-shadow: 0 0 0 1px rgba(167, 139, 250, 0.5), 0 0 20px rgba(167, 139, 250, 0.2); }
-  100% { box-shadow: none; }
 }

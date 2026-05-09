@@ -1,23 +1,28 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg:          #080b12;
-  --color-bg-elev:     #0d1117;
-  --color-bg-card:     #111722;
-  --color-fg:          #e6edf3;
-  --color-muted:       #7d8590;
-  --color-muted-2:     #484f58;
-  --color-line:        rgba(255, 255, 255, 0.06);
-  --color-line-2:      rgba(255, 255, 255, 0.10);
+  --color-bg:          #08080d;
+  --color-surface:     #0d0d14;
+  --color-card:        #111118;
+  --color-fg:          #dddde8;
+  --color-muted:       #6a6a82;
+  --color-faint:       #363648;
 
-  --color-accent:      #c4b5fd;
-  --color-accent-2:    #8b5cf6;
-  --color-accent-glow: rgba(167, 139, 250, 0.35);
+  --color-line:        rgba(255, 255, 255, 0.048);
+  --color-line-2:      rgba(255, 255, 255, 0.088);
 
-  --color-green:       #3fb950;
-  --color-orange:      #d29922;
-  --color-red:         #f85149;
-  --color-blue:        #58a6ff;
+  --color-accent:      #6366f1;
+  --color-accent-dim:  rgba(99, 102, 241, 0.14);
+  --color-accent-glow: rgba(99, 102, 241, 0.22);
+
+  --color-green:       #22c55e;
+  --color-blue:        #3b82f6;
+  --color-amber:       #f59e0b;
+  --color-red:         #ef4444;
+  --color-orange:      #f97316;
+
+  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
 :root { color-scheme: dark; }
@@ -30,27 +35,34 @@ html, body, #root {
 }
 
 body {
-  background: #080b12;
-  color: #e6edf3;
+  background: #08080d;
+  color: #dddde8;
+  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
   -webkit-font-smoothing: antialiased;
-  font-family: ui-sans-serif, system-ui, sans-serif;
-  font-feature-settings: 'ss01', 'ss02';
+  -moz-osx-font-smoothing: grayscale;
   overflow: hidden;
 }
 
-::selection { background: rgba(167, 139, 250, 0.35); color: #fff; }
+::selection { background: rgba(99, 102, 241, 0.32); color: #fff; }
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
   to   { opacity: 1; transform: none; }
 }
 
-@keyframes slide-in {
-  from { opacity: 0; transform: translateX(-8px); }
+@keyframes slide-in-right {
+  from { opacity: 0; transform: translateX(16px); }
   to   { opacity: 1; transform: none; }
 }
 
-@keyframes ghost-reorder {
-  0%   { background: rgba(167, 139, 250, 0.12); }
-  100% { background: transparent; }
+@keyframes ghost-flash {
+  0%   { background-color: rgba(99, 102, 241, 0.12); }
+  100% { background-color: transparent; }
+}
+
+@keyframes pulse-dot {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.35; }
 }
