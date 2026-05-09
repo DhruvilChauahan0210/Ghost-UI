@@ -133,7 +133,7 @@ export function GhostSelectTrigger({ children, onClick, className, ...rest }: Gh
       aria-haspopup="listbox"
       aria-expanded={open}
       onClick={handleClick}
-      className={`flex w-full items-center justify-between ${className ?? ''}`}
+      className={`flex w-full items-center justify-between gap-2 px-3 py-2 rounded-lg border border-white/[0.08] bg-white/[0.03] text-[13px] text-white/80 hover:bg-white/[0.06] hover:text-white/95 hover:border-white/[0.14] transition-all duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-indigo-400/40 cursor-pointer ${className ?? ''}`}
       {...rest}
     >
       <span>{children ?? value ?? placeholder}</span>
@@ -148,7 +148,7 @@ export function GhostSelectTrigger({ children, onClick, className, ...rest }: Gh
         strokeLinecap="round"
         strokeLinejoin="round"
         aria-hidden
-        className="shrink-0"
+        className="shrink-0 text-white/30"
       >
         <polyline points="6 9 12 15 18 9" />
       </svg>
@@ -264,7 +264,7 @@ export function GhostSelectContent({ children, maxHeight = 280, className }: Gho
             maxHeight,
             overflowY: 'auto',
           }}
-          className={className}
+          className={`rounded-xl border border-white/[0.07] bg-[#0d0d10] shadow-2xl shadow-black/80 py-1.5 overflow-hidden backdrop-blur-sm ${className ?? ''}`}
         >
           {sorted}
         </motion.div>
@@ -350,6 +350,7 @@ export function GhostSelectOption({
         boxShadow: score > 0.1 ? `inset 2px 0 0 rgba(139,141,248,${score * 0.7})` : undefined,
         transition: 'box-shadow 240ms ease, background 120ms ease',
       }}
+      className={`px-3 py-2 text-[13px] text-white/70 hover:bg-white/[0.06] hover:text-white/95 outline-none select-none transition-colors duration-100${isActive ? ' bg-white/[0.08] text-white/95' : ''}${disabled ? ' opacity-40 cursor-default' : ''}`}
       {...rest}
     >
       {children}

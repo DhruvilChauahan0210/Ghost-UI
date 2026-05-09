@@ -144,7 +144,7 @@ export function GhostAccordionItem({ id, zone, weight, children, className }: Gh
         data-ghost-score={score.toFixed(2)}
         data-state={isOpen ? 'open' : 'closed'}
         style={{ borderLeftColor: `rgba(139,141,248,${score * 0.6})` }}
-        className={`border-l-2 ${className ?? ''}`}
+        className={`border-l-2 rounded-lg overflow-hidden ${className ?? ''}`}
       >
         {children}
       </div>
@@ -178,7 +178,7 @@ export function GhostAccordionTrigger({ children, onClick, className, ...rest }:
       id={`ghost-accordion-trigger-${id}`}
       data-ghost-accordion-trigger=""
       onClick={handleClick}
-      className={`flex w-full items-center justify-between ${className ?? ''}`}
+      className={`flex w-full items-center justify-between gap-3 px-4 py-3 text-[13px] font-medium text-white/75 hover:text-white/95 hover:bg-white/[0.03] rounded-sm transition-all duration-150 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20 ${className ?? ''}`}
       {...rest}
     >
       {children}
@@ -195,7 +195,7 @@ export function GhostAccordionTrigger({ children, onClick, className, ...rest }:
         animate={{ rotate: isOpen ? 180 : 0 }}
         transition={{ type: 'spring', stiffness: 400, damping: 30 }}
         aria-hidden
-        className="shrink-0"
+        className="shrink-0 opacity-40"
       >
         <polyline points="6 9 12 15 18 9" />
       </motion.svg>

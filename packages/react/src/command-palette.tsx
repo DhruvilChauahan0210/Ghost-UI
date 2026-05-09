@@ -74,24 +74,25 @@ function GhostCommandItem({ command, zone, isActive, onSelect }: GhostCommandIte
       onClick={() => onSelect(command.id)}
       style={{
         boxShadow: score > 0.05
-          ? `inset 2px 0 0 rgba(139,141,248,${score * 0.7})`
+          ? `inset 3px 0 0 rgba(139,141,248,${score * 0.8})`
           : undefined,
-        transition: 'box-shadow 240ms ease, background 120ms ease',
         cursor: 'pointer',
       }}
       className={[
-        'flex items-center gap-3 px-4 py-2.5 select-none',
-        isActive ? 'bg-white/10' : 'hover:bg-white/5',
+        'flex items-center gap-3 px-3 py-2.5 mx-1 rounded-lg select-none transition-all duration-100',
+        isActive
+          ? 'bg-indigo-500/[0.12] ring-1 ring-inset ring-indigo-400/20'
+          : 'hover:bg-white/[0.04]',
       ].join(' ')}
     >
       {command.icon && (
-        <span className="shrink-0 text-white/50 w-4 h-4 flex items-center justify-center">
+        <span className="w-7 h-7 rounded-md bg-white/[0.05] border border-white/[0.06] flex items-center justify-center shrink-0 text-white/50 text-[13px]">
           {command.icon}
         </span>
       )}
-      <span className="flex-1 text-sm text-white/90 truncate">{command.label}</span>
+      <span className="flex-1 text-[13px] text-white/85 truncate">{command.label}</span>
       {command.shortcut && (
-        <kbd className="shrink-0 text-[11px] text-white/40 bg-white/5 border border-white/10 rounded px-1.5 py-0.5 font-mono">
+        <kbd className="text-[11px] text-white/30 bg-white/[0.04] border border-white/[0.07] rounded-md px-1.5 py-0.5 font-mono shrink-0">
           {command.shortcut}
         </kbd>
       )}
@@ -224,9 +225,13 @@ export function GhostCommandPalette({
             animate={{ opacity: 1, scale: 1, y: 0 }}
             exit={{ opacity: 0, scale: 0.96, y: -8 }}
             transition={{ type: 'spring', stiffness: 480, damping: 36 }}
-            className="fixed top-[20%] left-1/2 -translate-x-1/2 w-full max-w-xl z-[99998] rounded-xl border border-white/10 bg-neutral-900/95 shadow-2xl overflow-hidden"
+            className="fixed top-[18%] left-1/2 -translate-x-1/2 w-full max-w-[560px] z-[99998] rounded-2xl border border-white/[0.08] bg-[#08080c]/97 backdrop-blur-xl shadow-[0_32px_80px_rgba(0,0,0,0.85),0_0_0_0.5px_rgba(255,255,255,0.04)] overflow-hidden"
           >
-            <div className="border-b border-white/10">
+            <div className="border-b border-white/[0.06] flex items-center gap-3 px-4">
+              <svg className="w-4 h-4 shrink-0 text-white/25" viewBox="0 0 20 20" fill="none" stroke="currentColor" strokeWidth={1.5}>
+                <circle cx="8.5" cy="8.5" r="5.5" />
+                <path d="M14 14l3.5 3.5" strokeLinecap="round" />
+              </svg>
               <input
                 ref={inputRef}
                 type="text"
@@ -237,18 +242,21 @@ export function GhostCommandPalette({
                 onChange={(e) => { setQuery(e.target.value); setActiveIdx(0); }}
                 onKeyDown={handleKeyDown}
                 placeholder={placeholder}
-                className="w-full bg-transparent px-4 py-3.5 text-sm text-white placeholder:text-white/30 outline-none"
+                className="flex-1 bg-transparent py-4 text-[14px] text-white/90 placeholder:text-white/25 outline-none"
               />
             </div>
 
-            <div role="listbox" className="overflow-y-auto max-h-[360px] py-1">
+            <div
+              role="listbox"
+              className="max-h-[360px] overflow-y-auto py-2 [&::-webkit-scrollbar]:w-1.5 [&::-webkit-scrollbar-track]:bg-transparent [&::-webkit-scrollbar-thumb]:bg-white/[0.08] [&::-webkit-scrollbar-thumb]:rounded-full"
+            >
               {grouped.length === 0 && (
-                <div className="px-4 py-8 text-center text-sm text-white/30">No results</div>
+                <div className="px-4 py-10 text-center text-[13px] text-white/25">No results</div>
               )}
               {grouped.map((group) => (
                 <div key={group.label ?? '__ungrouped'}>
                   {group.label && (
-                    <div className="px-4 pt-3 pb-1 text-[11px] font-medium tracking-wider uppercase text-white/30 select-none">
+                    <div className="px-4 pb-1 pt-3 text-[10px] font-semibold uppercase tracking-[0.1em] text-white/25 select-none">
                       {group.label}
                     </div>
                   )}
@@ -266,6 +274,21 @@ export function GhostCommandPalette({
                   })}
                 </div>
               ))}
+            </div>
+
+            <div className="border-t border-white/[0.05] px-4 py-2 flex items-center gap-4">
+              <span className="text-[11px] text-white/20 flex items-center gap-1.5">
+                <kbd className="text-[10px] bg-white/[0.06] border border-white/[0.08] rounded px-1 py-0.5 font-mono leading-none">↑↓</kbd>
+                navigate
+              </span>
+              <span className="text-[11px] text-white/20 flex items-center gap-1.5">
+                <kbd className="text-[10px] bg-white/[0.06] border border-white/[0.08] rounded px-1 py-0.5 font-mono leading-none">↵</kbd>
+                select
+              </span>
+              <span className="text-[11px] text-white/20 flex items-center gap-1.5">
+                <kbd className="text-[10px] bg-white/[0.06] border border-white/[0.08] rounded px-1 py-0.5 font-mono leading-none">esc</kbd>
+                dismiss
+              </span>
             </div>
           </motion.div>
         </>

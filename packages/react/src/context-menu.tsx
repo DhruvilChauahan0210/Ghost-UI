@@ -265,7 +265,7 @@ export function GhostContextMenuContent({ children, className }: GhostContextMen
             zIndex: 9999,
             outline: 'none',
           }}
-          className={className}
+          className={`rounded-xl border border-white/[0.07] bg-[#0d0d10] shadow-2xl shadow-black/80 py-1.5 min-w-[180px] overflow-hidden backdrop-blur-sm ${className ?? ''}`}
         >
           {sorted}
         </motion.div>
@@ -365,7 +365,7 @@ export function GhostContextMenuItem({
         boxShadow: score > 0.1 ? `inset 2px 0 0 rgba(139,141,248,${score * 0.7})` : undefined,
         transition: 'box-shadow 240ms ease',
       }}
-      className={`${destructive ? 'text-red-500' : ''} ${className ?? ''}`.trim() || undefined}
+      className={`flex items-center gap-2.5 px-3 py-2.5 text-[12.5px] hover:bg-white/[0.06] hover:text-white/95 outline-none select-none transition-colors duration-100 focus:bg-white/[0.08]${destructive ? ' text-red-400' : ' text-white/75'}${disabled ? ' opacity-40 cursor-default' : ''} ${className ?? ''}`.trim()}
       {...rest}
     >
       {children}
@@ -378,7 +378,7 @@ export function GhostContextMenuItem({
 export interface GhostContextMenuSeparatorProps extends HTMLAttributes<HTMLHRElement> {}
 
 export function GhostContextMenuSeparator({ className, ...rest }: GhostContextMenuSeparatorProps) {
-  return <hr role="separator" className={`my-1 ${className ?? ''}`.trim() || undefined} {...rest} />;
+  return <hr role="separator" className={`border-t border-white/[0.06] my-1.5 mx-0 ${className ?? ''}`.trim()} {...rest} />;
 }
 
 // ─── Compound ─────────────────────────────────────────────────────────────────

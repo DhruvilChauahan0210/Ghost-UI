@@ -18,17 +18,17 @@ export interface GhostBreadcrumbProps extends HTMLAttributes<HTMLElement> {
   separator?: ReactNode;
 }
 
-export function GhostBreadcrumb({ zone: _zone, children, separator = '/', ...rest }: GhostBreadcrumbProps) {
+export function GhostBreadcrumb({ zone: _zone, children, separator = '›', ...rest }: GhostBreadcrumbProps) {
   const items = Children.toArray(children).filter(isValidElement);
 
   return (
     <nav aria-label="Breadcrumb" {...rest}>
-      <ol style={{ display: 'flex', alignItems: 'center', listStyle: 'none', margin: 0, padding: 0 }}>
+      <ol className="flex items-center gap-0 list-none m-0 p-0">
         {items.map((child, i) => (
-          <li key={i} style={{ display: 'flex', alignItems: 'center' }}>
+          <li key={i} className="flex items-center">
             {child}
             {i < items.length - 1 && (
-              <span aria-hidden style={{ margin: '0 0.5em', userSelect: 'none' }}>
+              <span aria-hidden className="mx-2 select-none text-white/20 text-[11px]">
                 {separator}
               </span>
             )}
@@ -98,6 +98,7 @@ export function GhostBreadcrumbItem({
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
         style={{ ...innerStyle, ...(style as React.CSSProperties) }}
+        className="text-[12px] font-medium text-white/85"
         {...(rest as HTMLAttributes<HTMLSpanElement>)}
       >
         {children}
@@ -114,7 +115,8 @@ export function GhostBreadcrumbItem({
         onClick={handleClick}
         onMouseEnter={handleMouseEnter}
         onMouseLeave={handleMouseLeave}
-        style={{ ...innerStyle, ...(style as React.CSSProperties) }}
+        style={innerStyle}
+        className="text-[12px] text-white/45 hover:text-white/80 transition-colors duration-150 no-underline"
         {...(rest as HTMLAttributes<HTMLAnchorElement>)}
       >
         {children}
@@ -129,7 +131,8 @@ export function GhostBreadcrumbItem({
       onClick={handleClick}
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
-      style={{ background: 'none', border: 'none', padding: 0, cursor: 'pointer', ...innerStyle, ...(style as React.CSSProperties) }}
+      style={innerStyle}
+      className="bg-transparent border-0 p-0 cursor-pointer text-[12px] text-white/45 hover:text-white/80 transition-colors duration-150"
       {...(rest as HTMLAttributes<HTMLButtonElement>)}
     >
       {children}

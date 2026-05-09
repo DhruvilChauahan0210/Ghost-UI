@@ -115,6 +115,8 @@ export function GhostToolbarButton({
     ? `0 0 ${28 * score}px ${5 * score}px rgba(120,120,255,${0.22 * score})`
     : undefined;
 
+  const { className: _className, ...restWithoutClassName } = rest;
+
   return (
     <button
       role="button"
@@ -129,7 +131,8 @@ export function GhostToolbarButton({
         transition: 'box-shadow 240ms ease',
         ...style,
       }}
-      {...rest}
+      className={`rounded-md px-2.5 py-1.5 text-[13px] text-white/50 hover:text-white/90 hover:bg-white/[0.06] active:scale-[0.95] active:bg-white/[0.09] transition-all duration-100 focus:outline-none focus-visible:ring-1 focus-visible:ring-white/20 cursor-pointer select-none ${rest.className ?? ''}`.trim()}
+      {...restWithoutClassName}
     >
       {tooltip && <title>{tooltip}</title>}
       {children}
@@ -144,7 +147,15 @@ export interface GhostToolbarSeparatorProps extends HTMLAttributes<HTMLDivElemen
 }
 
 export function GhostToolbarSeparator({ orientation = 'vertical', ...rest }: GhostToolbarSeparatorProps) {
-  return <div role="separator" aria-orientation={orientation} {...rest} />;
+  const { className, ...restWithoutClassName } = rest;
+  return (
+    <div
+      role="separator"
+      aria-orientation={orientation}
+      className={`self-stretch w-px bg-white/[0.08] mx-1 my-0.5 shrink-0 ${className ?? ''}`.trim()}
+      {...restWithoutClassName}
+    />
+  );
 }
 
 // ─── Compound ─────────────────────────────────────────────────────────────────

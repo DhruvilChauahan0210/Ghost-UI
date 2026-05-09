@@ -199,7 +199,7 @@ export function GhostPopoverContent({ children, offset = 8, style, ...rest }: Gh
           animate={{ opacity: placed ? 1 : 0, scale: 1, y: 0, x: 0 }}
           exit={{ opacity: 0, scale: 0.95, y: initialY, x: initialX }}
           transition={{ type: 'spring', stiffness: 400, damping: 30 }}
-          className={(rest as { className?: string }).className}
+          className={`rounded-xl border border-white/[0.08] bg-[#0d0d10] shadow-2xl shadow-black/70 backdrop-blur-sm ${(rest as { className?: string }).className ?? ''}`.trim()}
           data-ghost-popover=""
           style={{
             position: 'fixed',

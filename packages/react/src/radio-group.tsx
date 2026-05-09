@@ -89,11 +89,11 @@ export function GhostRadioItem({
         opacity: disabled ? 0.5 : 1,
         ...style,
       }}
-      className="flex items-center gap-3 select-none"
+      className="group flex items-center gap-3 select-none rounded-lg px-2 py-1.5 hover:bg-white/[0.04] transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-indigo-400/40 focus-visible:outline-none"
       {...rest}
     >
       <div
-        className="relative flex items-center justify-center w-4 h-4 rounded-full border-2 shrink-0"
+        className="relative flex items-center justify-center w-[15px] h-[15px] rounded-full border-2 shrink-0"
         style={{
           borderColor: isChecked ? 'rgb(139,141,248)' : 'rgba(255,255,255,0.25)',
           boxShadow: score > 0.1
@@ -109,7 +109,7 @@ export function GhostRadioItem({
           transition={{ type: 'spring', stiffness: 500, damping: 30 }}
         />
       </div>
-      <span className="text-sm text-white/80">{children}</span>
+      <span className="text-[13px] leading-snug text-white/75">{children}</span>
     </div>
   );
 }

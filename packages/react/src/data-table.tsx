@@ -60,13 +60,12 @@ function GhostColumnHeader({ col, zone, sortDir, onSort }: GhostColumnHeaderProp
       data-ghost-score={score.toFixed(2)}
       onClick={handleClick}
       aria-sort={sortDir === 'asc' ? 'ascending' : sortDir === 'desc' ? 'descending' : 'none'}
+      className="px-4 py-3 text-[11px] font-semibold uppercase tracking-wider text-white/40 border-b border-white/[0.06] cursor-pointer select-none hover:text-white/70 transition-colors duration-150"
       style={{
         textAlign: col.align ?? 'left',
         width: col.width,
-        cursor: 'pointer',
-        userSelect: 'none',
         boxShadow: borderGlow,
-        transition: 'box-shadow 240ms ease',
+        transition: 'box-shadow 240ms ease, color 150ms ease',
       }}
     >
       {col.header}
@@ -117,6 +116,7 @@ function GhostTableRow<T>({ row, rowId, rowZone, orderedColumns, onClick }: Ghos
       onMouseEnter={handleMouseEnter}
       onMouseLeave={handleMouseLeave}
       onClick={onClick ? () => onClick(row) : undefined}
+      className="border-b border-white/[0.04] hover:bg-white/[0.025] transition-colors duration-100"
       style={{ cursor: onClick ? 'pointer' : undefined, ...rowStyle }}
     >
       {orderedColumns.map((col) => {
@@ -125,7 +125,7 @@ function GhostTableRow<T>({ row, rowId, rowZone, orderedColumns, onClick }: Ghos
             ? col.accessor(row)
             : (row as Record<string, unknown>)[col.accessor as string] as ReactNode;
         return (
-          <td key={col.id} style={{ textAlign: col.align ?? 'left', width: col.width }}>
+          <td key={col.id} className="px-4 py-3 text-[13px] text-white/75" style={{ textAlign: col.align ?? 'left', width: col.width }}>
             {cell}
           </td>
         );
@@ -148,6 +148,7 @@ function StaticTableRow<T>({ row, rowId, orderedColumns, onClick }: StaticTableR
     <tr
       data-ghost-row-id={rowId}
       onClick={onClick ? () => onClick(row) : undefined}
+      className="border-b border-white/[0.04] hover:bg-white/[0.025] transition-colors duration-100"
       style={{ cursor: onClick ? 'pointer' : undefined, transition: 'background 200ms ease' }}
     >
       {orderedColumns.map((col) => {
@@ -156,7 +157,7 @@ function StaticTableRow<T>({ row, rowId, orderedColumns, onClick }: StaticTableR
             ? col.accessor(row)
             : (row as Record<string, unknown>)[col.accessor as string] as ReactNode;
         return (
-          <td key={col.id} style={{ textAlign: col.align ?? 'left', width: col.width }}>
+          <td key={col.id} className="px-4 py-3 text-[13px] text-white/75" style={{ textAlign: col.align ?? 'left', width: col.width }}>
             {cell}
           </td>
         );

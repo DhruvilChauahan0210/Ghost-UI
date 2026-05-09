@@ -86,11 +86,11 @@ export function GhostCheckboxItem({
         opacity: disabled ? 0.5 : 1,
         ...style,
       }}
-      className="flex items-center gap-3 select-none"
+      className="flex items-center gap-3 select-none rounded-lg px-2 py-1.5 hover:bg-white/[0.04] transition-colors duration-150 focus-visible:ring-2 focus-visible:ring-indigo-400/40 focus-visible:outline-none"
       {...rest}
     >
       <div
-        className="relative flex items-center justify-center w-4 h-4 rounded shrink-0 border-2"
+        className="relative flex items-center justify-center w-[15px] h-[15px] rounded-[4px] shrink-0 border-2"
         style={{
           borderColor: isChecked ? 'rgb(139,141,248)' : 'rgba(255,255,255,0.25)',
           backgroundColor: isChecked ? 'rgb(139,141,248)' : 'transparent',
@@ -118,7 +118,7 @@ export function GhostCheckboxItem({
           />
         </svg>
       </div>
-      <span className="text-sm text-white/80">{children}</span>
+      <span className="text-[13px] text-white/75">{children}</span>
     </div>
   );
 }
