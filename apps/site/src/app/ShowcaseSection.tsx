@@ -220,12 +220,13 @@ function ScreenshotPreview({ app, src, url }: { app: App; src: string; url: stri
         target="_blank"
         rel="noreferrer"
         className="group relative block cursor-pointer overflow-hidden"
+        style={{ aspectRatio: '2832 / 1986' }}
         aria-label={`Open ${isOrbit ? 'Orbit' : 'Luxe'} live demo`}
       >
         <img
           src={src}
           alt={isOrbit ? 'Orbit issue tracker screenshot' : 'Luxe fashion store screenshot'}
-          className="w-full h-auto block transition-transform duration-700 ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:scale-[1.03]"
+          className="w-full h-full object-cover object-top block transition-transform duration-700 ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:scale-[1.03]"
           draggable={false}
         />
 
