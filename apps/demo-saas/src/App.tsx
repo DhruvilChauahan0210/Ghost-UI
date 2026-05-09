@@ -1,5 +1,17 @@
 import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
-import { GhostProvider, Ghost, GhostMenu, GhostToastProvider, GhostPrivacyPanel, useGhostEngine, useGhostToast } from '@ghost-ui/react';
+import {
+  GhostProvider,
+  Ghost,
+  GhostMenu,
+  GhostToastProvider,
+  GhostPrivacyPanel,
+  GhostCommandPaletteProvider,
+  GhostBreadcrumb,
+  GhostBreadcrumbItem,
+  useGhostEngine,
+  useGhostToast,
+  type GhostCommand,
+} from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
 import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 
@@ -95,13 +107,34 @@ function lc(l: string) {
   return (LABEL_CFG[l] ?? 'bg-white/[0.03] text-[#5a5a72] border-white/[0.07]') + ' text-[10px] font-semibold px-1.5 py-0.5 rounded-md border tracking-wide';
 }
 
+const COMMANDS: GhostCommand[] = [
+  { id: 'nav-inbox',            label: 'Go to Inbox',         group: 'Navigate', onSelect: () => {} },
+  { id: 'nav-my',               label: 'Go to My Issues',     group: 'Navigate', onSelect: () => {} },
+  { id: 'nav-all',              label: 'Go to All Issues',    group: 'Navigate', onSelect: () => {} },
+  { id: 'nav-cycles',           label: 'Go to Cycles',        group: 'Navigate', onSelect: () => {} },
+  { id: 'nav-roadmap',          label: 'Go to Roadmap',       group: 'Navigate', onSelect: () => {} },
+  { id: 'nav-backlog',          label: 'Go to Backlog',       group: 'Navigate', onSelect: () => {} },
+  { id: 'act-resolve',          label: 'Resolve issue',       group: 'Actions',  onSelect: () => {} },
+  { id: 'act-comment',          label: 'Add comment',         group: 'Actions',  onSelect: () => {} },
+  { id: 'act-assign',           label: 'Assign issue',        group: 'Actions',  onSelect: () => {} },
+  { id: 'act-label',            label: 'Add label',           group: 'Actions',  onSelect: () => {} },
+  { id: 'act-archive',          label: 'Archive issue',       group: 'Actions',  onSelect: () => {} },
+  { id: 'act-close',            label: 'Close issue',         group: 'Actions',  onSelect: () => {} },
+  { id: 'filter-status-todo',   label: 'Filter: Todo',        group: 'Filter',   onSelect: () => {} },
+  { id: 'filter-status-progress', label: 'Filter: In Progress', group: 'Filter', onSelect: () => {} },
+  { id: 'filter-status-done',   label: 'Filter: Done',        group: 'Filter',   onSelect: () => {} },
+];
+
 export function App() {
   return (
     <GhostProvider persistence={localStorageAdapter('orbit-v3')}>
       <GhostToastProvider position="bottom-right">
-        <OrbitShell />
-        <GhostDemoBar />
-        <GhostDevtools defaultOpen={true} />
+        <GhostCommandPaletteProvider>
+          <OrbitShell />
+          <Ghost.CommandPalette zone="orbit.cmd" commands={COMMANDS} hotkey={true} />
+          <GhostDemoBar />
+          <GhostDevtools defaultOpen={true} />
+        </GhostCommandPaletteProvider>
       </GhostToastProvider>
     </GhostProvider>
   );
@@ -293,6 +326,7 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
   setFilterStatus: (s: Status | 'all') => void;
   activeNav: string;
 }) {
+  const { toast } = useGhostToast();
   const navLabel = NAV_ITEMS.find(n => n.id === activeNav)?.label ?? 'All Issues';
   const [assigneeQuery, setAssigneeQuery] = useState('');
   const filteredAssignees = ASSIGNEES.filter(a =>
@@ -313,6 +347,44 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
           <span className="text-[10px] text-[#2e2e42] bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.5 rounded-md font-mono tabular-nums">{issues.length}</span>
         </div>
         <div className="ml-auto flex items-center gap-0.5">
+          <Ghost.Toolbar zone="orbit.toolbar" className="flex items-center gap-0.5">
+            <Ghost.Toolbar.Button
+              id="tb-filter"
+              zone="orbit.toolbar"
+              onClick={() => toast({ zone: 'orbit.toolbar', variant: 'info', message: 'Filter panel coming soon' })}
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] text-[#5a5a72] hover:text-[#b8b8cc] hover:bg-white/[0.05] transition-colors cursor-pointer"
+            >
+              <span className="opacity-60"><IcFilter /></span>
+              <span>Filter</span>
+            </Ghost.Toolbar.Button>
+            <Ghost.Toolbar.Button
+              id="tb-group"
+              zone="orbit.toolbar"
+              onClick={() => toast({ zone: 'orbit.toolbar', variant: 'info', message: 'Group by coming soon' })}
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] text-[#5a5a72] hover:text-[#b8b8cc] hover:bg-white/[0.05] transition-colors cursor-pointer"
+            >
+              <span className="opacity-60"><IcDisplay /></span>
+              <span>Group</span>
+            </Ghost.Toolbar.Button>
+            <Ghost.Toolbar.Button
+              id="tb-sort"
+              zone="orbit.toolbar"
+              onClick={() => toast({ zone: 'orbit.toolbar', variant: 'info', message: 'Sort options coming soon' })}
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] text-[#5a5a72] hover:text-[#b8b8cc] hover:bg-white/[0.05] transition-colors cursor-pointer"
+            >
+              <span className="opacity-60"><IcSort /></span>
+              <span>Sort</span>
+            </Ghost.Toolbar.Button>
+            <Ghost.Toolbar.Button
+              id="tb-display"
+              zone="orbit.toolbar"
+              onClick={() => toast({ zone: 'orbit.toolbar', variant: 'info', message: 'Display settings coming soon' })}
+              className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] text-[#5a5a72] hover:text-[#b8b8cc] hover:bg-white/[0.05] transition-colors cursor-pointer"
+            >
+              <span className="opacity-60"><IcDisplay /></span>
+              <span>Display</span>
+            </Ghost.Toolbar.Button>
+          </Ghost.Toolbar>
           {/* Ghost.Combobox assignee filter */}
           <Ghost.Combobox
             zone="orbit.assignee-filter"
@@ -349,12 +421,6 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
               }
             </Ghost.Combobox.List>
           </Ghost.Combobox>
-          {([['Sort', IcSort], ['Group', IcDisplay]] as Array<[string, () => ReactNode]>).map(([label, Icon]) => (
-            <button key={label} className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] text-[#5a5a72] hover:text-[#b8b8cc] hover:bg-white/[0.05] transition-colors cursor-pointer">
-              <span className="opacity-60"><Icon /></span>
-              <span>{label}</span>
-            </button>
-          ))}
           <div className="w-px h-4 bg-white/[0.06] mx-1" />
           <button className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] font-semibold text-[#8b8df8] bg-[#5c5ef0]/[0.12] hover:bg-[#5c5ef0]/[0.18] border border-[#5c5ef0]/[0.2] transition-colors cursor-pointer">
             <IcPlus />
@@ -411,44 +477,108 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
             const isSelected = selected?.id === issue.id;
 
             return (
-              <div
+              <IssueRow
                 key={issue.id}
-                className={[
-                  'relative w-full flex items-center gap-3 px-4 h-9 border-b text-left transition-all group',
-                  isSelected
-                    ? 'bg-[#5c5ef0]/[0.08] border-white/[0.06]'
-                    : 'border-white/[0.035] hover:bg-white/[0.025]',
-                ].join(' ')}
-              >
-                <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r ${pm.bar}`} />
-                <button
-                  onClick={() => onSelect(issue)}
-                  className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer bg-transparent border-0 outline-none text-left h-full"
-                >
-                  <span style={{ color: sm.color }} className="flex-none shrink-0"><sm.Icon /></span>
-                  <span className="text-[10px] text-[#3a3a52] font-mono w-[56px] flex-none tabular-nums shrink-0 tracking-tight">{issue.id}</span>
-                  <span className={[
-                    'text-[12.5px] flex-1 truncate leading-none transition-colors',
-                    isSelected ? 'text-[#e6e6f0]' : 'text-[#a8a8c2] group-hover:text-[#d0d0e4]',
-                  ].join(' ')}>{issue.title}</span>
-                </button>
-                <div className="flex items-center gap-2 flex-none">
-                  {issue.labels.slice(0, 1).map(l => (
-                    <span key={l} className={lc(l)}>{l}</span>
-                  ))}
-                  <div className={`h-[18px] w-[18px] rounded-full ${av.bg} border border-white/[0.07] flex items-center justify-center text-[7.5px] font-bold ${av.text} flex-none`}>
-                    {issue.initials}
-                  </div>
-                  <span className="text-[10px] text-[#2e2e42] w-9 text-right tabular-nums font-mono">{issue.updatedAt}</span>
-                  {/* Ghost.Menu context actions — same zone as Quick Actions */}
-                  <IssueRowMenu issue={issue} />
-                </div>
-              </div>
+                issue={issue}
+                isSelected={isSelected}
+                sm={sm}
+                pm={pm}
+                av={av}
+                onSelect={onSelect}
+                toast={toast}
+              />
             );
           })
         )}
       </div>
     </div>
+  );
+}
+
+function IssueRow({ issue, isSelected, sm, pm, av, onSelect, toast }: {
+  issue: Issue;
+  isSelected: boolean;
+  sm: { label: string; color: string; Icon: () => ReactNode };
+  pm: { label: string; bar: string; dot: string };
+  av: { bg: string; text: string };
+  onSelect: (i: Issue) => void;
+  toast: ReturnType<typeof useGhostToast>['toast'];
+}) {
+  return (
+    <Ghost.ContextMenu zone="orbit.row-ctx">
+      <Ghost.ContextMenu.Trigger>
+        <div
+          className={[
+            'relative w-full flex items-center gap-3 px-4 h-9 border-b text-left transition-all group',
+            isSelected
+              ? 'bg-[#5c5ef0]/[0.08] border-white/[0.06]'
+              : 'border-white/[0.035] hover:bg-white/[0.025]',
+          ].join(' ')}
+        >
+          <span className={`absolute left-0 top-2 bottom-2 w-[3px] rounded-r ${pm.bar}`} />
+          <button
+            onClick={() => onSelect(issue)}
+            className="flex items-center gap-3 flex-1 min-w-0 cursor-pointer bg-transparent border-0 outline-none text-left h-full"
+          >
+            <span style={{ color: sm.color }} className="flex-none shrink-0"><sm.Icon /></span>
+            <span className="text-[10px] text-[#3a3a52] font-mono w-[56px] flex-none tabular-nums shrink-0 tracking-tight">{issue.id}</span>
+            <span className={[
+              'text-[12.5px] flex-1 truncate leading-none transition-colors',
+              isSelected ? 'text-[#e6e6f0]' : 'text-[#a8a8c2] group-hover:text-[#d0d0e4]',
+            ].join(' ')}>{issue.title}</span>
+          </button>
+          <div className="flex items-center gap-2 flex-none">
+            {issue.labels.slice(0, 1).map(l => (
+              <span key={l} className={lc(l)}>{l}</span>
+            ))}
+            <div className={`h-[18px] w-[18px] rounded-full ${av.bg} border border-white/[0.07] flex items-center justify-center text-[7.5px] font-bold ${av.text} flex-none`}>
+              {issue.initials}
+            </div>
+            <span className="text-[10px] text-[#2e2e42] w-9 text-right tabular-nums font-mono">{issue.updatedAt}</span>
+            <IssueRowMenu issue={issue} />
+          </div>
+        </div>
+      </Ghost.ContextMenu.Trigger>
+      <Ghost.ContextMenu.Content className="min-w-[180px] rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-md shadow-2xl shadow-black/60 py-1 overflow-hidden">
+        <Ghost.ContextMenu.Item
+          id="ctx-open"
+          onClick={() => toast({ zone: 'orbit.row-ctx', variant: 'info', message: `Opening ${issue.id}` })}
+          className="px-3 py-2 text-[12px] text-[#c8c8dc] hover:bg-white/[0.06] transition-colors outline-none"
+        >
+          Open issue
+        </Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item
+          id="ctx-copy-id"
+          onClick={() => toast({ zone: 'orbit.row-ctx', variant: 'success', message: `Copied ${issue.id} to clipboard` })}
+          className="px-3 py-2 text-[12px] text-[#c8c8dc] hover:bg-white/[0.06] transition-colors outline-none"
+        >
+          Copy issue ID
+        </Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item
+          id="ctx-assign"
+          onClick={() => toast({ zone: 'orbit.row-ctx', variant: 'success', message: `${issue.id} assigned to you` })}
+          className="px-3 py-2 text-[12px] text-[#c8c8dc] hover:bg-white/[0.06] transition-colors outline-none"
+        >
+          Assign to me
+        </Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item
+          id="ctx-status"
+          onClick={() => toast({ zone: 'orbit.row-ctx', variant: 'info', message: `Change status for ${issue.id}` })}
+          className="px-3 py-2 text-[12px] text-[#c8c8dc] hover:bg-white/[0.06] transition-colors outline-none"
+        >
+          Change status
+        </Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Separator className="border-white/[0.06]" />
+        <Ghost.ContextMenu.Item
+          id="ctx-delete"
+          destructive
+          onClick={() => toast({ zone: 'orbit.row-ctx', variant: 'error', message: `${issue.id} deleted` })}
+          className="px-3 py-2 text-[12px] hover:bg-red-950/40 transition-colors outline-none"
+        >
+          Delete issue
+        </Ghost.ContextMenu.Item>
+      </Ghost.ContextMenu.Content>
+    </Ghost.ContextMenu>
   );
 }
 
@@ -497,10 +627,13 @@ function DetailPanel({ issue, onClose }: {
   issue: Issue;
   onClose: () => void;
 }) {
+  const { toast } = useGhostToast();
   const [usedActions, setUsedActions] = useState<Set<string>>(new Set());
   const [comment, setComment] = useState('');
-  const sm = STATUS_CFG[issue.status];
-  const pm = PRIORITY_CFG[issue.priority];
+  const [selectedStatus, setSelectedStatus] = useState<Status>(issue.status);
+  const [selectedPriority, setSelectedPriority] = useState<Priority>(issue.priority);
+  const sm = STATUS_CFG[selectedStatus];
+  const pm = PRIORITY_CFG[selectedPriority];
   const av = AVATAR_CFG[issue.initials] ?? { bg: 'bg-white/10', text: 'text-white' };
 
   return (
@@ -532,6 +665,13 @@ function DetailPanel({ issue, onClose }: {
       {/* Scrollable content */}
       <div className="flex-1 overflow-y-auto">
         <div className="px-5 pt-5 pb-4 flex flex-col gap-5">
+
+          {/* Breadcrumb */}
+          <GhostBreadcrumb zone="orbit.breadcrumb" className="mb-2">
+            <GhostBreadcrumbItem id="bc-project" zone="orbit.breadcrumb" href="#">{issue.project}</GhostBreadcrumbItem>
+            <GhostBreadcrumbItem id="bc-cycle"   zone="orbit.breadcrumb" href="#">{issue.cycle}</GhostBreadcrumbItem>
+            <GhostBreadcrumbItem id="bc-issue"   zone="orbit.breadcrumb" current>{issue.id}</GhostBreadcrumbItem>
+          </GhostBreadcrumb>
 
           {/* Title */}
           <h2 className="text-[15px] font-semibold text-[#e6e6f0] leading-[1.4] tracking-[-0.015em]">
@@ -583,17 +723,50 @@ function DetailPanel({ issue, onClose }: {
           >
             <Ghost.Item id="meta-status" zone="orbit.metadata" className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5">
               <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">Status</p>
-              <span className="flex items-center gap-1.5" style={{ color: sm.color }}>
-                <sm.Icon />
-                <span className="text-[12px]">{sm.label}</span>
-              </span>
+              <Ghost.Select
+                zone="orbit.select-status"
+                value={selectedStatus}
+                onValueChange={(id) => setSelectedStatus(id as Status)}
+                className="w-full"
+              >
+                <Ghost.Select.Trigger className="h-6 px-2 rounded-md text-[11.5px] bg-white/[0.03] border border-white/[0.07] hover:border-white/[0.12] hover:bg-white/[0.05] transition-colors" style={{ color: sm.color }} />
+                <Ghost.Select.Content className="rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-md shadow-2xl shadow-black/60 py-1 overflow-hidden">
+                  {(Object.entries(STATUS_CFG) as Array<[Status, { label: string; color: string; Icon: () => ReactNode }]>).map(([key, cfg]) => (
+                    <Ghost.Select.Option
+                      key={key}
+                      id={key}
+                      value={cfg.label}
+                      className="px-3 py-2 text-[12px] text-[#c8c8dc] hover:bg-white/[0.06] transition-colors"
+                      style={{ color: cfg.color }}
+                    >
+                      {cfg.label}
+                    </Ghost.Select.Option>
+                  ))}
+                </Ghost.Select.Content>
+              </Ghost.Select>
             </Ghost.Item>
             <Ghost.Item id="meta-priority" zone="orbit.metadata" className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5">
               <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">Priority</p>
-              <span className="flex items-center gap-1.5">
-                <PriorityDot priority={issue.priority} />
-                <span className="text-[12px] text-[#c8c8dc]">{pm.label}</span>
-              </span>
+              <Ghost.Select
+                zone="orbit.select-priority"
+                value={selectedPriority}
+                onValueChange={(id) => setSelectedPriority(id as Priority)}
+                className="w-full"
+              >
+                <Ghost.Select.Trigger className="h-6 px-2 rounded-md text-[11.5px] bg-white/[0.03] border border-white/[0.07] hover:border-white/[0.12] hover:bg-white/[0.05] transition-colors text-[#c8c8dc]" />
+                <Ghost.Select.Content className="rounded-xl border border-white/[0.08] bg-[#0e0e18]/95 backdrop-blur-md shadow-2xl shadow-black/60 py-1 overflow-hidden">
+                  {(Object.entries(PRIORITY_CFG) as Array<[Priority, { label: string; bar: string; dot: string }]>).map(([key, cfg]) => (
+                    <Ghost.Select.Option
+                      key={key}
+                      id={key}
+                      value={cfg.label}
+                      className="px-3 py-2 text-[12px] text-[#c8c8dc] hover:bg-white/[0.06] transition-colors"
+                    >
+                      {cfg.label}
+                    </Ghost.Select.Option>
+                  ))}
+                </Ghost.Select.Content>
+              </Ghost.Select>
             </Ghost.Item>
             <Ghost.Item id="meta-assignee" zone="orbit.metadata" className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5">
               <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">Assignee</p>
@@ -626,39 +799,55 @@ function DetailPanel({ issue, onClose }: {
             </div>
           </div>
 
-          {/* Description */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-2">Description</p>
-            <p className="text-[12.5px] leading-relaxed" style={{ color: '#787890' }}>{issue.description}</p>
-          </div>
-
-          {/* Activity */}
-          <div>
-            <p className="text-[10px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-3">Activity</p>
-            <div className="flex flex-col gap-0">
-              {[
-                { initials: 'MC', ...AVATAR_CFG.MC, name: 'Maya Chen',   action: 'moved to',     detail: 'In Progress', time: '3m ago' },
-                { initials: 'AT', ...AVATAR_CFG.AT, name: 'Alex Torres', action: 'set priority',  detail: 'Urgent',      time: '1h ago' },
-                { initials: 'SR', ...AVATAR_CFG.SR, name: 'Sam Rivera',  action: 'opened issue',  detail: '',            time: '2d ago' },
-              ].map((ev, i, arr) => (
-                <div key={i} className="relative flex items-start gap-3 pb-4">
-                  {i < arr.length - 1 && (
-                    <span className="absolute left-[13px] top-5 bottom-0 w-px bg-white/[0.05]" />
-                  )}
-                  <div className={`h-[26px] w-[26px] rounded-full ${ev.bg} border border-white/[0.07] flex items-center justify-center text-[8px] font-bold ${ev.text} flex-none shrink-0 z-10`}>{ev.initials}</div>
-                  <div className="pt-0.5">
-                    <p className="text-[12px] leading-snug">
-                      <span className="font-semibold text-[#c8c8dc]">{ev.name}</span>
-                      {' '}
-                      <span className="text-[#5a5a72]">{ev.action}</span>
-                      {ev.detail && <> <span className="text-[#9898b2] font-medium">{ev.detail}</span></>}
-                    </p>
-                    <p className="text-[10px] text-[#2e2e42] mt-0.5 font-mono">{ev.time}</p>
-                  </div>
+          {/* Accordion: Description, Activity, Relations */}
+          <Ghost.Accordion zone="orbit.detail-accordion" multiple className="flex flex-col gap-px">
+            <Ghost.Accordion.Item id="acc-description" zone="orbit.detail-accordion" className="rounded-lg border border-white/[0.05] bg-white/[0.02] overflow-hidden">
+              <Ghost.Accordion.Trigger className="px-3.5 py-2.5 text-[10px] font-bold uppercase tracking-[0.09em] text-[#5a5a72] hover:text-[#9898b2] transition-colors">
+                Description
+              </Ghost.Accordion.Trigger>
+              <Ghost.Accordion.Content className="px-3.5 pb-3">
+                <p className="text-[12px] text-[#9191a8] leading-relaxed">{issue.description}</p>
+              </Ghost.Accordion.Content>
+            </Ghost.Accordion.Item>
+            <Ghost.Accordion.Item id="acc-activity" zone="orbit.detail-accordion" className="rounded-lg border border-white/[0.05] bg-white/[0.02] overflow-hidden">
+              <Ghost.Accordion.Trigger className="px-3.5 py-2.5 text-[10px] font-bold uppercase tracking-[0.09em] text-[#5a5a72] hover:text-[#9898b2] transition-colors">
+                Activity
+              </Ghost.Accordion.Trigger>
+              <Ghost.Accordion.Content className="px-3.5 pb-3">
+                <div className="flex flex-col gap-0">
+                  {[
+                    { initials: 'MC', ...AVATAR_CFG.MC, name: 'Maya Chen',   action: 'moved to',     detail: 'In Progress', time: '3m ago' },
+                    { initials: 'AT', ...AVATAR_CFG.AT, name: 'Alex Torres', action: 'set priority',  detail: 'Urgent',      time: '1h ago' },
+                    { initials: 'SR', ...AVATAR_CFG.SR, name: 'Sam Rivera',  action: 'opened issue',  detail: '',            time: '2d ago' },
+                  ].map((ev, i, arr) => (
+                    <div key={i} className="relative flex items-start gap-3 pb-4">
+                      {i < arr.length - 1 && (
+                        <span className="absolute left-[13px] top-5 bottom-0 w-px bg-white/[0.05]" />
+                      )}
+                      <div className={`h-[26px] w-[26px] rounded-full ${ev.bg} border border-white/[0.07] flex items-center justify-center text-[8px] font-bold ${ev.text} flex-none shrink-0 z-10`}>{ev.initials}</div>
+                      <div className="pt-0.5">
+                        <p className="text-[12px] leading-snug">
+                          <span className="font-semibold text-[#c8c8dc]">{ev.name}</span>
+                          {' '}
+                          <span className="text-[#5a5a72]">{ev.action}</span>
+                          {ev.detail && <> <span className="text-[#9898b2] font-medium">{ev.detail}</span></>}
+                        </p>
+                        <p className="text-[10px] text-[#2e2e42] mt-0.5 font-mono">{ev.time}</p>
+                      </div>
+                    </div>
+                  ))}
                 </div>
-              ))}
-            </div>
-          </div>
+              </Ghost.Accordion.Content>
+            </Ghost.Accordion.Item>
+            <Ghost.Accordion.Item id="acc-relations" zone="orbit.detail-accordion" className="rounded-lg border border-white/[0.05] bg-white/[0.02] overflow-hidden">
+              <Ghost.Accordion.Trigger className="px-3.5 py-2.5 text-[10px] font-bold uppercase tracking-[0.09em] text-[#5a5a72] hover:text-[#9898b2] transition-colors">
+                Relations
+              </Ghost.Accordion.Trigger>
+              <Ghost.Accordion.Content className="px-3.5 pb-3">
+                <p className="text-[11px] text-[#5a5a72]">No linked issues.</p>
+              </Ghost.Accordion.Content>
+            </Ghost.Accordion.Item>
+          </Ghost.Accordion>
 
         </div>
       </div>
@@ -675,7 +864,10 @@ function DetailPanel({ issue, onClose }: {
               className="flex-1 h-8 px-3 text-[12.5px] text-[#e6e6f0] placeholder:text-[#2e2e42] bg-transparent outline-none"
             />
             {comment && (
-              <button className="h-8 w-8 flex-none flex items-center justify-center text-[#8b8df8] hover:text-[#b0b2ff] transition-colors cursor-pointer">
+              <button
+                onClick={() => { toast({ zone: 'orbit.actions', variant: 'success', message: 'Comment added' }); setComment(''); }}
+                className="h-8 w-8 flex-none flex items-center justify-center text-[#8b8df8] hover:text-[#b0b2ff] transition-colors cursor-pointer"
+              >
                 <IcSend />
               </button>
             )}
@@ -797,15 +989,38 @@ function IcChevronRight() { return <svg width="10" height="10" viewBox="0 0 10 1
 function IcSend()    { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M12 7L2 2l2.5 5L2 12l10-5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>; }
 
 const ORBIT_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
-  { id: 'act-resolve', zone: 'orbit.actions', count: 32 },
-  { id: 'act-comment', zone: 'orbit.actions', count: 18 },
-  { id: 'act-assign',  zone: 'orbit.actions', count: 10 },
-  { id: 'act-label',   zone: 'orbit.actions', count:  4 },
-  { id: 'act-archive', zone: 'orbit.actions', count:  2 },
-  { id: 'nav-all',     zone: 'orbit.nav',     count: 30 },
-  { id: 'nav-inbox',   zone: 'orbit.nav',     count: 20 },
-  { id: 'nav-cycles',  zone: 'orbit.nav',     count: 15 },
-  { id: 'nav-my',      zone: 'orbit.nav',     count:  8 },
+  { id: 'act-resolve', zone: 'orbit.actions',          count: 32 },
+  { id: 'act-comment', zone: 'orbit.actions',          count: 18 },
+  { id: 'act-assign',  zone: 'orbit.actions',          count: 10 },
+  { id: 'act-label',   zone: 'orbit.actions',          count:  4 },
+  { id: 'act-archive', zone: 'orbit.actions',          count:  2 },
+  { id: 'nav-all',     zone: 'orbit.nav',              count: 30 },
+  { id: 'nav-inbox',   zone: 'orbit.nav',              count: 20 },
+  { id: 'nav-cycles',  zone: 'orbit.nav',              count: 15 },
+  { id: 'nav-my',      zone: 'orbit.nav',              count:  8 },
+  { id: 'act-resolve', zone: 'orbit.cmd',              count: 20 },
+  { id: 'act-comment', zone: 'orbit.cmd',              count: 15 },
+  { id: 'nav-all',     zone: 'orbit.cmd',              count: 10 },
+  { id: 'ctx-open',    zone: 'orbit.row-ctx',          count: 18 },
+  { id: 'ctx-assign',  zone: 'orbit.row-ctx',          count: 12 },
+  { id: 'ctx-copy-id', zone: 'orbit.row-ctx',          count:  8 },
+  { id: 'ctx-status',  zone: 'orbit.row-ctx',          count:  6 },
+  { id: 'ctx-delete',  zone: 'orbit.row-ctx',          count:  2 },
+  { id: 'in-progress', zone: 'orbit.select-status',    count: 22 },
+  { id: 'done',        zone: 'orbit.select-status',    count: 18 },
+  { id: 'todo',        zone: 'orbit.select-status',    count: 10 },
+  { id: 'high',        zone: 'orbit.select-priority',  count: 20 },
+  { id: 'urgent',      zone: 'orbit.select-priority',  count: 15 },
+  { id: 'medium',      zone: 'orbit.select-priority',  count: 10 },
+  { id: 'tb-filter',   zone: 'orbit.toolbar',          count: 25 },
+  { id: 'tb-sort',     zone: 'orbit.toolbar',          count: 18 },
+  { id: 'tb-group',    zone: 'orbit.toolbar',          count:  8 },
+  { id: 'tb-display',  zone: 'orbit.toolbar',          count:  4 },
+  { id: 'acc-description', zone: 'orbit.detail-accordion', count: 30 },
+  { id: 'acc-activity',    zone: 'orbit.detail-accordion', count: 15 },
+  { id: 'acc-relations',   zone: 'orbit.detail-accordion', count:  5 },
+  { id: 'bc-cycle',    zone: 'orbit.breadcrumb',       count: 20 },
+  { id: 'bc-project',  zone: 'orbit.breadcrumb',       count: 12 },
 ];
 
 const TOAST_DEMOS = [

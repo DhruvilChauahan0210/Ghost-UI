@@ -1,6 +1,7 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { GhostProvider, Ghost, GhostPrivacyPanel, useGhostEngine } from '@ghost-ui/react';
+import type { GhostColumn } from '@ghost-ui/react';
 import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 import { GhostDevtools } from '@ghost-ui/devtools';
 
@@ -463,9 +464,9 @@ function PerformanceChart({ chartPts }: { chartPts: number[] }) {
 
 // ─── Sparkline ───────────────────────────────────────────────────────────────
 
-function Sparkline({ pts, up }: { pts: number[]; up: boolean }) {
+function Sparkline({ pts, up, className }: { pts: number[]; up: boolean; className?: string }) {
   return (
-    <svg viewBox="0 0 60 22" className="w-[60px] h-[22px]">
+    <svg viewBox="0 0 60 22" className={`w-[60px] h-[22px] ${className ?? ''}`}>
       <path
         d={sparkPath(pts)}
         fill="none"
@@ -477,6 +478,83 @@ function Sparkline({ pts, up }: { pts: number[]; up: boolean }) {
     </svg>
   );
 }
+
+// ─── DataTable cell helpers ───────────────────────────────────────────────────
+
+function AssetCell({ pos }: { pos: Position }) {
+  return (
+    <div className="flex items-center gap-2.5 px-4 py-3">
+      <span
+        className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded"
+        style={{
+          color: SECTOR_COLORS[pos.sector] ?? '#7a90a8',
+          background: `${SECTOR_COLORS[pos.sector] ?? '#7a90a8'}1a`,
+        }}
+      >
+        {pos.ticker}
+      </span>
+      <span className="text-[12px] text-secondary truncate max-w-[120px]">{pos.name}</span>
+    </div>
+  );
+}
+
+function ChangeCell({ change }: { change: number }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-3">
+      <Sparkline pts={[]} up={change >= 0} className="hidden" />
+      <span className={`font-mono text-[11px] tabular-nums ${change >= 0 ? 'text-green' : 'text-red'}`}>
+        {change >= 0 ? '+' : ''}{change.toFixed(2)}%
+      </span>
+    </div>
+  );
+}
+
+function SparklineCell({ pts, change }: { pts: number[]; change: number }) {
+  return (
+    <div className="flex items-center gap-2 px-4 py-3">
+      <Sparkline pts={pts} up={change >= 0} />
+    </div>
+  );
+}
+
+// ─── Selected position detail (rendered below DataTable when a row is selected) ──
+
+function SelectedPositionDetail({ pos }: { pos: Position }) {
+  const avgCost = pos.value / pos.shares;
+  const pnl = (pos.price - avgCost) * pos.shares;
+  const pnlPct = ((pos.price - avgCost) / avgCost) * 100;
+
+  return (
+    <div className="bg-faint/60 border-t border-line px-4 py-3">
+      <div className="flex items-center gap-8 text-[11px]">
+        <div>
+          <span className="text-secondary block mb-0.5">Avg Cost Basis</span>
+          <span className="font-mono text-fg">${fmtPrice(avgCost)}</span>
+        </div>
+        <div>
+          <span className="text-secondary block mb-0.5">Market Value</span>
+          <span className="font-mono text-fg">{fmtValue(pos.value)}</span>
+        </div>
+        <div>
+          <span className="text-secondary block mb-0.5">Total P&amp;L</span>
+          <span className={`font-mono font-medium ${pnl >= 0 ? 'text-green' : 'text-red'}`}>
+            {pnl >= 0 ? '+' : ''}{fmtValue(Math.round(pnl))} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
+          </span>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── DataTable column definitions ─────────────────────────────────────────────
+
+const POSITION_COLUMNS: GhostColumn<Position>[] = [
+  { id: 'col-asset',    header: 'Asset',    accessor: (r) => <AssetCell pos={r} />,                              pinned: true, width: '160px' },
+  { id: 'col-price',    header: 'Price',    accessor: (r) => <span className="px-4 py-3 block font-mono text-[12px] text-fg tabular-nums">${fmtPrice(r.price)}</span>,  width: '90px' },
+  { id: 'col-value',    header: 'Value',    accessor: (r) => <span className="px-4 py-3 block font-mono text-[12px] text-fg tabular-nums">{fmtValue(r.value)}</span>,   width: '90px' },
+  { id: 'col-change',   header: '7D',       accessor: (r) => <ChangeCell change={r.change} />,                   width: '70px' },
+  { id: 'col-holdings', header: 'Holdings', accessor: (r) => <SparklineCell pts={r.sparkline} change={r.change} />, width: '80px' },
+];
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
@@ -614,6 +692,8 @@ function PortfolioView({ onAction }: PortfolioViewProps) {
   const iconCls = 'text-accent';
   const labelCls = 'text-[11px] text-secondary group-hover:text-fg transition-colors font-medium';
 
+  const selectedPos = selectedTicker ? POSITIONS.find(p => p.ticker === selectedTicker) ?? null : null;
+
   return (
     <div className="flex-1 grid grid-cols-[1fr_280px] overflow-hidden">
       <div className="overflow-y-auto p-6 flex flex-col gap-5 border-r border-line">
@@ -709,93 +789,22 @@ function PortfolioView({ onAction }: PortfolioViewProps) {
           </Ghost.Canvas>
         </div>
 
-        {/* Positions table */}
+        {/* Positions table — Ghost.DataTable */}
         <div className="bg-card rounded-xl border border-line overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
             <span className="text-[13px] font-semibold text-fg">Positions</span>
             <button className="text-[11px] text-accent-text hover:text-accent transition-colors cursor-pointer">See all</button>
           </div>
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-line">
-                {['Asset', 'Price', 'Value', '7D', 'Holdings'].map(h => (
-                  <th key={h} className="px-4 py-2.5 text-left text-[10px] font-medium text-secondary uppercase tracking-wider">{h}</th>
-                ))}
-              </tr>
-            </thead>
-            <tbody>
-              {POSITIONS.map(pos => {
-                const isExpanded = selectedTicker === pos.ticker;
-                const avgCost = pos.value / pos.shares;
-                const pnl = (pos.price - avgCost) * pos.shares;
-                const pnlPct = ((pos.price - avgCost) / avgCost) * 100;
-                return (
-                  <>
-                    <tr
-                      key={pos.ticker}
-                      onClick={() => setSelectedTicker(isExpanded ? null : pos.ticker)}
-                      className="border-b border-line last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
-                    >
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2.5">
-                          <span
-                            className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded"
-                            style={{
-                              color: SECTOR_COLORS[pos.sector] ?? '#7a90a8',
-                              background: `${SECTOR_COLORS[pos.sector] ?? '#7a90a8'}1a`,
-                            }}
-                          >
-                            {pos.ticker}
-                          </span>
-                          <span className="text-[12px] text-secondary truncate max-w-[120px]">{pos.name}</span>
-                          <IcChevronDown open={isExpanded} />
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-[12px] text-fg tabular-nums">${fmtPrice(pos.price)}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-[12px] text-fg tabular-nums">{fmtValue(pos.value)}</span>
-                      </td>
-                      <td className="px-4 py-3">
-                        <div className="flex items-center gap-2">
-                          <Sparkline pts={pos.sparkline} up={pos.change >= 0} />
-                          <span className={`font-mono text-[11px] tabular-nums ${pos.change >= 0 ? 'text-green' : 'text-red'}`}>
-                            {pos.change >= 0 ? '+' : ''}{pos.change.toFixed(2)}%
-                          </span>
-                        </div>
-                      </td>
-                      <td className="px-4 py-3">
-                        <span className="font-mono text-[12px] text-secondary tabular-nums">{fmtShares(pos.shares)} {pos.ticker}</span>
-                      </td>
-                    </tr>
-                    {isExpanded && (
-                      <tr key={`${pos.ticker}-detail`} className="border-b border-line bg-faint/60">
-                        <td colSpan={5} className="px-4 py-3">
-                          <div className="flex items-center gap-8 text-[11px]">
-                            <div>
-                              <span className="text-secondary block mb-0.5">Avg Cost Basis</span>
-                              <span className="font-mono text-fg">${fmtPrice(avgCost)}</span>
-                            </div>
-                            <div>
-                              <span className="text-secondary block mb-0.5">Market Value</span>
-                              <span className="font-mono text-fg">{fmtValue(pos.value)}</span>
-                            </div>
-                            <div>
-                              <span className="text-secondary block mb-0.5">Total P&amp;L</span>
-                              <span className={`font-mono font-medium ${pnl >= 0 ? 'text-green' : 'text-red'}`}>
-                                {pnl >= 0 ? '+' : ''}{fmtValue(Math.round(pnl))} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
-                              </span>
-                            </div>
-                          </div>
-                        </td>
-                      </tr>
-                    )}
-                  </>
-                );
-              })}
-            </tbody>
-          </table>
+          <Ghost.DataTable
+            zone="apex.positions"
+            columns={POSITION_COLUMNS}
+            data={POSITIONS}
+            rowKey={(r) => r.ticker}
+            rowZone="apex.position-rows"
+            className="bg-card rounded-xl border border-line overflow-hidden"
+            onRowClick={(pos) => setSelectedTicker(pos.ticker === selectedTicker ? null : pos.ticker)}
+          />
+          {selectedPos && <SelectedPositionDetail pos={selectedPos} />}
         </div>
       </div>
 
@@ -886,55 +895,84 @@ function MarketsView({ onToast }: MarketsViewProps) {
         </div>
       </div>
 
-      <div className="bg-card rounded-xl border border-line overflow-hidden">
-        <table className="w-full">
-          <thead>
-            <tr className="border-b border-line">
-              {['Asset', 'Price', 'Change', '7D Chart', 'Actions'].map(h => (
-                <th key={h} className="px-4 py-3 text-left text-[10px] font-medium text-secondary uppercase tracking-wider">{h}</th>
-              ))}
-            </tr>
-          </thead>
-          <tbody>
-            {prices.map(item => (
-              <tr key={item.ticker} className="border-b border-line last:border-0 hover:bg-white/[0.02] transition-colors">
-                <td className="px-4 py-3.5">
+      {/* Watchlist with Popover detail */}
+      <div className="bg-card rounded-xl border border-line overflow-hidden mb-5">
+        <div className="grid grid-cols-[1fr_auto_auto_auto_auto] border-b border-line">
+          {['Asset', 'Price', 'Change', '7D Chart', 'Actions'].map(h => (
+            <div key={h} className="px-4 py-3 text-left text-[10px] font-medium text-secondary uppercase tracking-wider">{h}</div>
+          ))}
+        </div>
+        {prices.map(item => (
+          <Ghost.Popover key={item.ticker} zone="apex.watchlist-detail" id={`pop-${item.ticker}`} placement="right">
+            <Ghost.Popover.Trigger asChild>
+              <button
+                type="button"
+                className="grid grid-cols-[1fr_auto_auto_auto_auto] w-full border-b border-line last:border-0 hover:bg-white/[0.02] transition-colors text-left cursor-pointer"
+              >
+                <div className="px-4 py-3.5">
                   <div className="flex items-center gap-2.5">
                     <span className="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-accent-dim text-accent-text">{item.ticker}</span>
                     <span className="text-[12px] text-secondary">{item.name}</span>
                   </div>
-                </td>
-                <td className="px-4 py-3.5">
+                </div>
+                <div className="px-4 py-3.5">
                   <span className="font-mono text-[13px] text-fg tabular-nums">${fmtPrice(item.price)}</span>
-                </td>
-                <td className="px-4 py-3.5">
+                </div>
+                <div className="px-4 py-3.5">
                   <span className={`font-mono text-[12px] tabular-nums ${item.change >= 0 ? 'text-green' : 'text-red'}`}>
                     {item.change >= 0 ? '+' : ''}{item.change.toFixed(2)}%
                   </span>
-                </td>
-                <td className="px-4 py-3.5">
+                </div>
+                <div className="px-4 py-3.5">
                   <Sparkline pts={item.sparkline} up={item.change >= 0} />
-                </td>
-                <td className="px-4 py-3.5">
+                </div>
+                <div className="px-4 py-3.5">
                   <div className="flex items-center gap-2">
-                    <button
-                      onClick={() => onToast(`Buy order placed for ${item.ticker}`, 'success')}
+                    <span
+                      onClick={e => { e.stopPropagation(); onToast(`Buy order placed for ${item.ticker}`, 'success'); }}
                       className="px-3 py-1.5 rounded-md bg-green/10 text-green text-[11px] font-medium border border-green/20 hover:bg-green/20 transition-colors cursor-pointer"
                     >
                       Buy
-                    </button>
-                    <button
-                      onClick={() => onToast(`Price alert set for ${item.ticker}`, 'info')}
+                    </span>
+                    <span
+                      onClick={e => { e.stopPropagation(); onToast(`Price alert set for ${item.ticker}`, 'info'); }}
                       className="px-3 py-1.5 rounded-md bg-faint text-secondary text-[11px] font-medium border border-line-2 hover:text-fg hover:border-line transition-colors cursor-pointer"
                     >
                       Alert
-                    </button>
+                    </span>
                   </div>
-                </td>
-              </tr>
-            ))}
-          </tbody>
-        </table>
+                </div>
+              </button>
+            </Ghost.Popover.Trigger>
+            <Ghost.Popover.Content className="w-56 bg-card border border-line rounded-xl p-3 shadow-2xl shadow-black/60">
+              <div className="text-[11px] font-mono text-secondary mb-1">{item.ticker}</div>
+              <div className="text-[18px] font-bold font-mono text-fg">${item.price.toLocaleString()}</div>
+              <div className={`text-[11px] font-mono mt-0.5 ${item.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                {item.change >= 0 ? '+' : ''}{item.change.toFixed(2)}%
+              </div>
+              <Sparkline pts={item.sparkline} up={item.change >= 0} className="mt-2" />
+            </Ghost.Popover.Content>
+          </Ghost.Popover>
+        ))}
+      </div>
+
+      {/* Market News — Ghost.Accordion */}
+      <div>
+        <div className="text-[13px] font-semibold text-fg mb-3">Market News</div>
+        <Ghost.Accordion zone="apex.market-news" multiple className="flex flex-col gap-1">
+          <Ghost.Accordion.Item id="news-fed" zone="apex.market-news" className="bg-card border border-line rounded-lg">
+            <Ghost.Accordion.Trigger className="px-4 py-3 text-[12px] font-medium text-fg w-full text-left">Fed holds rates — markets rally</Ghost.Accordion.Trigger>
+            <Ghost.Accordion.Content className="px-4 pb-3"><p className="text-[11px] text-secondary leading-relaxed">The Federal Reserve kept interest rates unchanged at 5.25–5.5%, citing progress on inflation while signaling two potential cuts later in 2025.</p></Ghost.Accordion.Content>
+          </Ghost.Accordion.Item>
+          <Ghost.Accordion.Item id="news-nvda" zone="apex.market-news" className="bg-card border border-line rounded-lg">
+            <Ghost.Accordion.Trigger className="px-4 py-3 text-[12px] font-medium text-fg w-full text-left">NVIDIA beats Q1 earnings by 18%</Ghost.Accordion.Trigger>
+            <Ghost.Accordion.Content className="px-4 pb-3"><p className="text-[11px] text-secondary leading-relaxed">NVIDIA reported Q1 revenue of $26.0B, up 262% YoY. Data center revenue reached $22.6B driven by H100 and H200 GPU demand.</p></Ghost.Accordion.Content>
+          </Ghost.Accordion.Item>
+          <Ghost.Accordion.Item id="news-btc" zone="apex.market-news" className="bg-card border border-line rounded-lg">
+            <Ghost.Accordion.Trigger className="px-4 py-3 text-[12px] font-medium text-fg w-full text-left">Bitcoin ETF inflows hit record $1.2B in a day</Ghost.Accordion.Trigger>
+            <Ghost.Accordion.Content className="px-4 pb-3"><p className="text-[11px] text-secondary leading-relaxed">Spot Bitcoin ETFs recorded net inflows of $1.24B on Thursday, led by BlackRock's IBIT and Fidelity's FBTC, pushing BTC above $67K.</p></Ghost.Accordion.Content>
+          </Ghost.Accordion.Item>
+        </Ghost.Accordion>
       </div>
     </div>
   );
@@ -948,12 +986,12 @@ interface TradeViewProps {
 
 function TradeView({ onToast }: TradeViewProps) {
   const [side, setSide] = useState<OrderSide>('buy');
-  const [ticker, setTicker] = useState('NVDA');
+  const [selectedAsset, setSelectedAsset] = useState('NVDA');
   const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
   const [amount, setAmount] = useState('');
   const [limitPrice, setLimitPrice] = useState('');
 
-  const selectedPos = POSITIONS.find(p => p.ticker === ticker)!;
+  const selectedPos = POSITIONS.find(p => p.ticker === selectedAsset)!;
   const usdAmt = parseFloat(amount) || 0;
   const estShares = usdAmt > 0 && selectedPos ? usdAmt / selectedPos.price : 0;
 
@@ -964,17 +1002,10 @@ function TradeView({ onToast }: TradeViewProps) {
     }
     const verb = side === 'buy' ? 'Bought' : 'Sold';
     const sharesStr = estShares < 0.01 ? estShares.toFixed(6) : estShares.toFixed(4);
-    onToast(`${verb} ${sharesStr} ${ticker} for $${usdAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'success');
+    onToast(`${verb} ${sharesStr} ${selectedAsset} for $${usdAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'success');
     setAmount('');
     setLimitPrice('');
   };
-
-  const sideBtnCls = (s: OrderSide) => [
-    'flex-1 py-2 rounded-md text-[13px] font-medium transition-colors cursor-pointer',
-    side === s
-      ? s === 'buy' ? 'bg-green text-bg' : 'bg-red text-white'
-      : 'text-secondary hover:text-fg',
-  ].join(' ');
 
   return (
     <div className="flex-1 overflow-y-auto p-6 flex items-start justify-center">
@@ -984,33 +1015,41 @@ function TradeView({ onToast }: TradeViewProps) {
           <p className="text-[12px] text-secondary mt-0.5">Market and limit orders</p>
         </div>
 
-        {/* Buy / Sell toggle */}
+        {/* Buy / Sell — Ghost.RadioGroup */}
         <div>
           <label className="text-[10px] font-medium text-secondary uppercase tracking-wider mb-2 block">
             Side — Ghost AI reorders by usage
           </label>
-          <Ghost.Slot zone="apex.trade-side" className="flex gap-2 bg-faint rounded-lg p-1 border border-line">
-            <Ghost.Button id="buy" zone="apex.trade-side" onClick={() => setSide('buy')} className={sideBtnCls('buy')}>
-              Buy
-            </Ghost.Button>
-            <Ghost.Button id="sell" zone="apex.trade-side" onClick={() => setSide('sell')} className={sideBtnCls('sell')}>
-              Sell
-            </Ghost.Button>
-          </Ghost.Slot>
+          <Ghost.RadioGroup
+            zone="apex.trade-side"
+            value={side}
+            onValueChange={(id) => setSide(id as OrderSide)}
+            orientation="horizontal"
+            className="flex gap-2 bg-faint rounded-lg p-1 border border-line"
+          >
+            <Ghost.RadioGroup.Item id="buy"  className="flex-1 px-4 py-1.5 rounded text-[12px] font-medium text-center cursor-pointer">Buy</Ghost.RadioGroup.Item>
+            <Ghost.RadioGroup.Item id="sell" className="flex-1 px-4 py-1.5 rounded text-[12px] font-medium text-center cursor-pointer">Sell</Ghost.RadioGroup.Item>
+          </Ghost.RadioGroup>
         </div>
 
-        {/* Asset selector */}
+        {/* Asset selector — Ghost.Select */}
         <div>
           <label className="text-[10px] font-medium text-secondary uppercase tracking-wider mb-1.5 block">Asset</label>
-          <select
-            value={ticker}
-            onChange={e => setTicker(e.target.value)}
-            className="w-full bg-faint border border-line-2 rounded-lg px-3 py-2.5 text-[13px] text-fg outline-none focus:border-accent/40 transition-colors cursor-pointer appearance-none"
-          >
-            {POSITIONS.map(p => (
-              <option key={p.ticker} value={p.ticker}>{p.ticker} — {p.name}</option>
-            ))}
-          </select>
+          <Ghost.Select zone="apex.trade-asset" value={selectedAsset} onValueChange={(id) => setSelectedAsset(id)} placeholder="Select asset…" className="w-full">
+            <Ghost.Select.Trigger className="w-full px-3 py-2 rounded-lg border border-line bg-faint text-[13px] text-fg text-left" />
+            <Ghost.Select.Content className="bg-card border border-line rounded-lg shadow-2xl shadow-black/60 overflow-hidden">
+              {POSITIONS.map(p => (
+                <Ghost.Select.Option
+                  key={p.ticker}
+                  id={p.ticker}
+                  value={p.ticker}
+                  className="px-3 py-2 text-[13px] text-fg hover:bg-white/[0.05] transition-colors"
+                >
+                  {p.ticker} — {p.name}
+                </Ghost.Select.Option>
+              ))}
+            </Ghost.Select.Content>
+          </Ghost.Select>
           {selectedPos && (
             <div className="mt-1.5 text-[11px] font-mono text-secondary">
               Current price: <span className="text-fg">${fmtPrice(selectedPos.price)}</span>
@@ -1078,7 +1117,7 @@ function TradeView({ onToast }: TradeViewProps) {
         {estShares > 0 && (
           <div className="bg-faint rounded-lg px-4 py-3 border border-line-2">
             <div className="text-[10px] text-secondary uppercase tracking-wider mb-1">Estimated</div>
-            <div className="font-mono text-[13px] text-fg">{estShares < 0.01 ? estShares.toFixed(6) : estShares.toFixed(4)} <span className="text-secondary">{ticker}</span></div>
+            <div className="font-mono text-[13px] text-fg">{estShares < 0.01 ? estShares.toFixed(6) : estShares.toFixed(4)} <span className="text-secondary">{selectedAsset}</span></div>
           </div>
         )}
 
@@ -1091,7 +1130,7 @@ function TradeView({ onToast }: TradeViewProps) {
               : 'bg-red text-white hover:bg-red/90',
           ].join(' ')}
         >
-          {side === 'buy' ? 'Buy' : 'Sell'} {ticker}
+          {side === 'buy' ? 'Buy' : 'Sell'} {selectedAsset}
         </button>
 
         <p className="text-[10px] text-center text-secondary/60">
@@ -1289,6 +1328,20 @@ const APEX_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
   { id: 'holding-msft',    zone: 'apex.holdings',       count: 20 },
   { id: 'holding-voo',     zone: 'apex.holdings',       count: 12 },
   { id: 'holding-eth',     zone: 'apex.holdings',       count:  8 },
+  { id: 'col-value',       zone: 'apex.positions',      count: 35 },
+  { id: 'col-change',      zone: 'apex.positions',      count: 28 },
+  { id: 'col-price',       zone: 'apex.positions',      count: 20 },
+  { id: 'col-holdings',    zone: 'apex.positions',      count: 12 },
+  { id: 'NVDA',            zone: 'apex.trade-asset',    count: 28 },
+  { id: 'BTC',             zone: 'apex.trade-asset',    count: 20 },
+  { id: 'AAPL',            zone: 'apex.trade-asset',    count: 15 },
+  { id: 'ETH',             zone: 'apex.trade-asset',    count: 10 },
+  { id: 'pop-TSLA',        zone: 'apex.watchlist-detail', count: 22 },
+  { id: 'pop-AMZN',        zone: 'apex.watchlist-detail', count: 15 },
+  { id: 'pop-GOOGL',       zone: 'apex.watchlist-detail', count: 12 },
+  { id: 'news-nvda',       zone: 'apex.market-news',    count: 25 },
+  { id: 'news-fed',        zone: 'apex.market-news',    count: 18 },
+  { id: 'news-btc',        zone: 'apex.market-news',    count: 14 },
 ];
 
 function GhostDemoBar() {

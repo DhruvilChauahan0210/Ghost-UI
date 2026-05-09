@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect } from 'react';
-import { GhostProvider, Ghost, GhostPrivacyPanel, useGhostEngine } from '@ghost-ui/react';
+import { GhostProvider, Ghost, GhostPrivacyPanel, GhostBreadcrumb, GhostBreadcrumbItem, useGhostEngine } from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
 import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 
@@ -53,15 +53,21 @@ export function App() {
 
 function LuxeApp() {
   const [category, setCategory] = useState('All');
+  const [sortBy, setSortBy] = useState('sort-new');
   const [cart, setCart] = useState<Set<string>>(new Set());
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const [quickView, setQuickView] = useState<Product | null>(null);
   const [selectedSize, setSelectedSize] = useState<Record<string, string>>({});
 
-  const filtered = useMemo(
-    () => category === 'All' ? PRODUCTS : PRODUCTS.filter(p => p.category === category),
-    [category]
-  );
+  const filtered = useMemo(() => {
+    const base = category === 'All' ? PRODUCTS : PRODUCTS.filter(p => p.category === category);
+    return [...base].sort((a, b) => {
+      if (sortBy === 'sort-price-asc') return a.price - b.price;
+      if (sortBy === 'sort-price-desc') return b.price - a.price;
+      if (sortBy === 'sort-name') return a.name.localeCompare(b.name);
+      return 0;
+    });
+  }, [category, sortBy]);
 
   function handleAction(actionId: string, product: Product) {
     if (actionId === 'act-bag') setCart(p => new Set([...p, product.id]));
@@ -75,7 +81,7 @@ function LuxeApp() {
       <SiteHeader cartCount={cart.size} wishlistCount={wishlist.size} />
       <CategoryNav category={category} setCategory={setCategory} />
       <main className="max-w-[1400px] mx-auto px-8 py-10">
-        <CollectionHeader category={category} count={filtered.length} />
+        <CollectionHeader category={category} count={filtered.length} sortBy={sortBy} setSortBy={setSortBy} />
         <GhostHintBar />
         <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10 mt-6">
           {filtered.map((product, i) => (
@@ -194,7 +200,7 @@ function CategoryNav({ category, setCategory }: { category: string; setCategory:
   );
 }
 
-function CollectionHeader({ category, count }: { category: string; count: number }) {
+function CollectionHeader({ category, count, sortBy, setSortBy }: { category: string; count: number; sortBy: string; setSortBy: (id: string) => void }) {
   const title = category === 'All' ? 'The Summer Edit' : category;
   return (
     <div className="flex items-end justify-between pb-6 border-b border-[#1a1714]/[0.08]">
@@ -208,14 +214,22 @@ function CollectionHeader({ category, count }: { category: string; count: number
         </h1>
         <p className="text-[14px] text-[#6e6560] mt-2">{count} pieces — curated for the considered wardrobe</p>
       </div>
-      <div className="flex items-center gap-4 text-[12px] text-[#a09890]">
-        <button className="flex items-center gap-1.5 hover:text-[#1a1714] transition-colors cursor-pointer">
-          <IcSort /> Sort: Featured
-        </button>
-        <div className="h-4 w-px bg-[#1a1714]/[0.12]" />
-        <button className="flex items-center gap-1.5 hover:text-[#1a1714] transition-colors cursor-pointer">
-          <IcFilter /> Filter
-        </button>
+      <div className="flex items-center gap-3">
+        <Ghost.Toolbar zone="luxe.grid-toolbar" className="flex items-center gap-1">
+          <Ghost.Toolbar.Button id="tb-grid" zone="luxe.grid-toolbar" className="p-1.5 rounded text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208] transition-colors cursor-pointer">⊞</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-list" zone="luxe.grid-toolbar" className="p-1.5 rounded text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208] transition-colors cursor-pointer">☰</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Separator className="w-px h-4 bg-[#2a1e0a] mx-1" />
+          <Ghost.Toolbar.Button id="tb-filter" zone="luxe.grid-toolbar" className="px-2 py-1 rounded text-[10px] text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208] transition-colors cursor-pointer">Filter</Ghost.Toolbar.Button>
+        </Ghost.Toolbar>
+        <Ghost.Select zone="luxe.sort" value={sortBy} onValueChange={(id) => setSortBy(id)} placeholder="Sort by…" className="w-36">
+          <Ghost.Select.Trigger className="px-3 py-1.5 rounded-lg border border-[#2a1e0a] bg-[#110d06] text-[11px] text-[#8a7450] text-left" />
+          <Ghost.Select.Content className="bg-[#110d06] border border-[#2a1e0a] rounded-lg shadow-xl shadow-black/40 py-1">
+            <Ghost.Select.Option id="sort-new" value="New Arrivals" className="px-3 py-2 text-[11px] text-[#8a7450] hover:bg-[#1a1208] cursor-pointer">New Arrivals</Ghost.Select.Option>
+            <Ghost.Select.Option id="sort-price-asc" value="Price: Low → High" className="px-3 py-2 text-[11px] text-[#8a7450] hover:bg-[#1a1208] cursor-pointer">Price: Low → High</Ghost.Select.Option>
+            <Ghost.Select.Option id="sort-price-desc" value="Price: High → Low" className="px-3 py-2 text-[11px] text-[#8a7450] hover:bg-[#1a1208] cursor-pointer">Price: High → Low</Ghost.Select.Option>
+            <Ghost.Select.Option id="sort-name" value="Name A–Z" className="px-3 py-2 text-[11px] text-[#8a7450] hover:bg-[#1a1208] cursor-pointer">Name A–Z</Ghost.Select.Option>
+          </Ghost.Select.Content>
+        </Ghost.Select>
       </div>
     </div>
   );
@@ -249,6 +263,8 @@ function ProductCard({ product, inCart, inWishlist, selectedSize, onSizeSelect, 
   index: number;
 }) {
   return (
+    <Ghost.ContextMenu zone="luxe.product-ctx">
+      <Ghost.ContextMenu.Trigger>
     <div
       className="group flex flex-col"
       style={{ animation: 'fade-up 0.4s ease both', animationDelay: `${Math.min(index * 40, 400)}ms` }}
@@ -344,6 +360,15 @@ function ProductCard({ product, inCart, inWishlist, selectedSize, onSizeSelect, 
         </div>
       </div>
     </div>
+      </Ghost.ContextMenu.Trigger>
+      <Ghost.ContextMenu.Content className="bg-[#0f0b05] border border-[#2a1e0a] rounded-xl shadow-2xl shadow-black/80 py-1 min-w-[160px]">
+        <Ghost.ContextMenu.Item id="ctx-view" className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">View details</Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item id="ctx-wishlist" className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Add to wishlist</Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item id="ctx-compare" className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Compare</Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Separator className="border-[#2a1e0a] my-1" />
+        <Ghost.ContextMenu.Item id="ctx-share" className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Share</Ghost.ContextMenu.Item>
+      </Ghost.ContextMenu.Content>
+    </Ghost.ContextMenu>
   );
 }
 
@@ -354,7 +379,7 @@ function QuickViewModal({ product, inCart, inWishlist, onAction, onClose }: {
   onAction: (id: string) => void;
   onClose: () => void;
 }) {
-  const [size, setSize] = useState('');
+  const [selectedSizes, setSelectedSizes] = useState<string[]>([]);
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6" onClick={onClose}>
       <div className="absolute inset-0 bg-black/40" />
@@ -376,6 +401,13 @@ function QuickViewModal({ product, inCart, inWishlist, onAction, onClose }: {
           </button>
 
           <p className="text-[10px] tracking-[0.12em] uppercase text-[#a09890] mb-2">{product.designer}</p>
+
+          <GhostBreadcrumb zone="luxe.breadcrumb" className="mb-3 text-[#5a4a2a] text-[11px]">
+            <GhostBreadcrumbItem id="bc-home" zone="luxe.breadcrumb" href="#">Luxe</GhostBreadcrumbItem>
+            <GhostBreadcrumbItem id="bc-category" zone="luxe.breadcrumb" href="#">{product.category}</GhostBreadcrumbItem>
+            <GhostBreadcrumbItem id="bc-product" zone="luxe.breadcrumb" current>{product.name}</GhostBreadcrumbItem>
+          </GhostBreadcrumb>
+
           <h2
             className="text-[28px] leading-tight text-[#1a1714] mb-3"
             style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}
@@ -400,34 +432,28 @@ function QuickViewModal({ product, inCart, inWishlist, onAction, onClose }: {
             )}
           </div>
 
-          <p className="text-[13.5px] text-[#6e6560] leading-relaxed mb-5">{product.description}</p>
-
-          <div className="mb-5">
-            <p className="text-[10px] tracking-[0.10em] uppercase text-[#a09890] mb-1.5">Material</p>
-            <p className="text-[13px] text-[#6e6560]">{product.material}</p>
-          </div>
-
           <div className="mb-6">
             <div className="flex items-center justify-between mb-2.5">
               <p className="text-[10px] tracking-[0.10em] uppercase text-[#a09890]">Select Size</p>
               <a href="#" className="text-[10px] tracking-[0.06em] uppercase text-[#b5892a] hover:text-[#1a1714] transition-colors">Size Guide</a>
             </div>
-            <div className="flex flex-wrap gap-2">
-              {product.sizes.map(s => (
-                <button
-                  key={s}
-                  onClick={() => setSize(s)}
-                  className={[
-                    'px-3 py-2 text-[12px] border transition-colors cursor-pointer',
-                    size === s
-                      ? 'border-[#1a1714] text-[#1a1714] bg-[#1a1714]/[0.04] font-medium'
-                      : 'border-[#1a1714]/[0.15] text-[#6e6560] hover:border-[#1a1714]/[0.4] hover:text-[#1a1714]',
-                  ].join(' ')}
+            <Ghost.CheckboxGroup
+              zone="luxe.size-select"
+              checkedIds={selectedSizes}
+              onCheckedChange={(_id, _checked, all) => setSelectedSizes(all)}
+              orientation="horizontal"
+              className="flex flex-wrap gap-2"
+            >
+              {product.sizes.map(size => (
+                <Ghost.CheckboxGroup.Item
+                  key={size}
+                  id={`size-${size}`}
+                  className="px-3 py-1.5 rounded-lg border border-[#2a1e0a] text-[11px] font-medium text-[#8a7450] hover:border-[#c9a05a]/40 cursor-pointer min-w-[40px] text-center"
                 >
-                  {s}
-                </button>
+                  {size}
+                </Ghost.CheckboxGroup.Item>
               ))}
-            </div>
+            </Ghost.CheckboxGroup>
           </div>
 
           {product.scarcity && (
@@ -456,6 +482,27 @@ function QuickViewModal({ product, inCart, inWishlist, onAction, onClose }: {
               {inWishlist ? 'Saved to Wishlist' : 'Save to Wishlist'}
             </button>
           </div>
+
+          <Ghost.Accordion zone="luxe.product-details" multiple className="flex flex-col divide-y divide-[#1a1208] mt-6">
+            <Ghost.Accordion.Item id="acc-description" zone="luxe.product-details" className="py-1">
+              <Ghost.Accordion.Trigger className="py-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7450] w-full text-left">Description</Ghost.Accordion.Trigger>
+              <Ghost.Accordion.Content>
+                <p className="pb-3 text-[12px] text-[#5a4a2a] leading-relaxed">{product.description}</p>
+              </Ghost.Accordion.Content>
+            </Ghost.Accordion.Item>
+            <Ghost.Accordion.Item id="acc-material" zone="luxe.product-details" className="py-1">
+              <Ghost.Accordion.Trigger className="py-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7450] w-full text-left">Materials</Ghost.Accordion.Trigger>
+              <Ghost.Accordion.Content>
+                <p className="pb-3 text-[12px] text-[#5a4a2a]">{product.material}</p>
+              </Ghost.Accordion.Content>
+            </Ghost.Accordion.Item>
+            <Ghost.Accordion.Item id="acc-shipping" zone="luxe.product-details" className="py-1">
+              <Ghost.Accordion.Trigger className="py-3 text-[11px] font-semibold uppercase tracking-[0.1em] text-[#8a7450] w-full text-left">Shipping &amp; Returns</Ghost.Accordion.Trigger>
+              <Ghost.Accordion.Content>
+                <p className="pb-3 text-[12px] text-[#5a4a2a] leading-relaxed">Complimentary shipping on all orders over $500. Free returns within 14 days in original condition.</p>
+              </Ghost.Accordion.Content>
+            </Ghost.Accordion.Item>
+          </Ghost.Accordion>
         </div>
       </div>
     </div>
@@ -527,6 +574,22 @@ const LUXE_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
   { id: 'act-bag',         zone: 'luxe.product-actions', count: 38 },
   { id: 'act-wishlist',    zone: 'luxe.product-actions', count: 24 },
   { id: 'act-quickview',   zone: 'luxe.product-actions', count: 10 },
+  { id: 'sort-price-asc',  zone: 'luxe.sort',            count: 25 },
+  { id: 'sort-new',        zone: 'luxe.sort',            count: 18 },
+  { id: 'sort-price-desc', zone: 'luxe.sort',            count: 12 },
+  { id: 'ctx-wishlist',    zone: 'luxe.product-ctx',     count: 30 },
+  { id: 'ctx-view',        zone: 'luxe.product-ctx',     count: 22 },
+  { id: 'ctx-compare',     zone: 'luxe.product-ctx',     count: 10 },
+  { id: 'ctx-share',       zone: 'luxe.product-ctx',     count:  5 },
+  { id: 'size-S',          zone: 'luxe.size-select',     count: 35 },
+  { id: 'size-M',          zone: 'luxe.size-select',     count: 28 },
+  { id: 'size-L',          zone: 'luxe.size-select',     count: 15 },
+  { id: 'acc-description', zone: 'luxe.product-details', count: 40 },
+  { id: 'acc-material',    zone: 'luxe.product-details', count: 22 },
+  { id: 'acc-shipping',    zone: 'luxe.product-details', count: 18 },
+  { id: 'tb-grid',         zone: 'luxe.grid-toolbar',    count: 20 },
+  { id: 'tb-filter',       zone: 'luxe.grid-toolbar',    count: 15 },
+  { id: 'tb-list',         zone: 'luxe.grid-toolbar',    count:  8 },
 ];
 
 function GhostDemoBar() {

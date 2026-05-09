@@ -1,6 +1,7 @@
 import type { ReactNode } from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { Ghost, GhostProvider, GhostPrivacyPanel, localStorageAdapter, useGhostEngine } from '@ghost-ui/react';
+import { Ghost, GhostProvider, GhostPrivacyPanel, GhostCommandPaletteProvider, localStorageAdapter, useGhostEngine } from '@ghost-ui/react';
+import type { GhostCommand } from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
 import type { GhostEvent } from '@ghost-ui/core';
 
@@ -500,6 +501,10 @@ function OverviewView({ onLoadQueueItem }: {
 // ─── Create View ──────────────────────────────────────────────────────────────
 
 function CreateView(): ReactNode {
+  const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['twitter']);
+  const [postAction, setPostAction] = useState('schedule');
+  const [postScheduleTime, setPostScheduleTime] = useState('today-3pm');
+
   return (
     <div className="flex flex-col gap-4">
       <div
@@ -518,6 +523,84 @@ function CreateView(): ReactNode {
         </div>
         <h2 className="font-semibold mb-1" style={{ color: 'var(--color-fg)', fontSize: 15 }}>Create New Content</h2>
         <p style={{ color: 'var(--color-secondary)', fontSize: 13 }}>Use the compose panel on the right to draft and publish your post.</p>
+      </div>
+
+      <div
+        className="rounded-xl border overflow-hidden"
+        style={{ background: 'var(--color-card)', borderColor: 'var(--color-line)' }}
+      >
+        <div className="px-4 py-3 border-b" style={{ borderColor: 'var(--color-line)' }}>
+          <p className="mb-2 uppercase tracking-widest font-semibold" style={{ color: 'var(--color-muted)', fontSize: 10 }}>
+            Post to
+          </p>
+          <Ghost.CheckboxGroup
+            zone="studio.platform-select"
+            defaultChecked={['twitter']}
+            onCheckedChange={(_id, _checked, all) => setSelectedPlatforms(all)}
+            orientation="horizontal"
+            className="flex flex-wrap gap-2"
+          >
+            {CHANNELS.map(ch => (
+              <Ghost.CheckboxGroup.Item
+                key={ch.id}
+                id={ch.id}
+                className="flex items-center gap-1.5 px-3 py-1.5 rounded-lg border border-[var(--color-line)] text-[11px] text-[var(--color-secondary)] hover:border-[var(--color-accent)]/30 cursor-pointer"
+              >
+                <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: ch.dot }} />
+                {ch.name}
+              </Ghost.CheckboxGroup.Item>
+            ))}
+          </Ghost.CheckboxGroup>
+          <p className="mt-2 text-[10px]" style={{ color: 'var(--color-muted)' }}>
+            {selectedPlatforms.length} platform{selectedPlatforms.length !== 1 ? 's' : ''} selected
+          </p>
+        </div>
+
+        <Ghost.Toolbar zone="studio.editor-toolbar" className="flex items-center gap-0.5 px-2 py-1.5 border-b border-[var(--color-line)]">
+          <Ghost.Toolbar.Button id="tb-bold"   zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px] font-bold">B</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-italic" zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px] italic">I</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-link"   zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">🔗</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Separator className="w-px h-4 bg-white/[0.06] mx-1" />
+          <Ghost.Toolbar.Button id="tb-emoji"  zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px]">😊</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-image"  zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">📎</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-thread" zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">＋</Ghost.Toolbar.Button>
+        </Ghost.Toolbar>
+
+        <div className="px-4 py-3">
+          <p className="mb-2 uppercase tracking-widest font-semibold" style={{ color: 'var(--color-muted)', fontSize: 10 }}>
+            Action
+          </p>
+          <Ghost.RadioGroup
+            zone="studio.post-action"
+            defaultValue="schedule"
+            onValueChange={(id) => setPostAction(id)}
+            orientation="horizontal"
+            className="flex gap-2"
+          >
+            <Ghost.RadioGroup.Item id="schedule"    className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-line)] text-[11px] text-[var(--color-secondary)] cursor-pointer text-center">Schedule</Ghost.RadioGroup.Item>
+            <Ghost.RadioGroup.Item id="publish-now" className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-line)] text-[11px] text-[var(--color-secondary)] cursor-pointer text-center">Publish Now</Ghost.RadioGroup.Item>
+            <Ghost.RadioGroup.Item id="save-draft"  className="flex-1 px-3 py-2 rounded-lg border border-[var(--color-line)] text-[11px] text-[var(--color-secondary)] cursor-pointer text-center">Save Draft</Ghost.RadioGroup.Item>
+          </Ghost.RadioGroup>
+
+          {postAction === 'schedule' && (
+            <div className="mt-3">
+              <p className="mb-1.5 uppercase tracking-widest font-semibold" style={{ color: 'var(--color-muted)', fontSize: 10 }}>
+                Schedule time
+              </p>
+              <Ghost.Select zone="studio.schedule-time" value={postScheduleTime} onValueChange={(id) => setPostScheduleTime(id)} className="w-full">
+                <Ghost.Select.Trigger className="w-full px-3 py-2 rounded-lg border border-[var(--color-line)] bg-[var(--color-faint)] text-[12px] text-[var(--color-secondary)] text-left" />
+                <Ghost.Select.Content className="bg-[var(--color-card)] border border-[var(--color-line)] rounded-lg overflow-hidden shadow-xl shadow-black/50">
+                  <Ghost.Select.Option id="today-3pm"     value="Today · 3:00 PM"     className="px-3 py-2 text-[12px] text-[var(--color-fg)] hover:bg-white/[0.05]">Today · 3:00 PM</Ghost.Select.Option>
+                  <Ghost.Select.Option id="today-6pm"     value="Today · 6:00 PM"     className="px-3 py-2 text-[12px] text-[var(--color-fg)] hover:bg-white/[0.05]">Today · 6:00 PM</Ghost.Select.Option>
+                  <Ghost.Select.Option id="today-9pm"     value="Today · 9:00 PM"     className="px-3 py-2 text-[12px] text-[var(--color-fg)] hover:bg-white/[0.05]">Today · 9:00 PM</Ghost.Select.Option>
+                  <Ghost.Select.Option id="tomorrow-9am"  value="Tomorrow · 9:00 AM"  className="px-3 py-2 text-[12px] text-[var(--color-fg)] hover:bg-white/[0.05]">Tomorrow · 9:00 AM</Ghost.Select.Option>
+                  <Ghost.Select.Option id="tomorrow-12pm" value="Tomorrow · 12:00 PM" className="px-3 py-2 text-[12px] text-[var(--color-fg)] hover:bg-white/[0.05]">Tomorrow · 12:00 PM</Ghost.Select.Option>
+                  <Ghost.Select.Option id="custom"        value="Custom time…"        className="px-3 py-2 text-[12px] text-[var(--color-fg)] hover:bg-white/[0.05]">Custom time…</Ghost.Select.Option>
+                </Ghost.Select.Content>
+              </Ghost.Select>
+            </div>
+          )}
+        </div>
       </div>
 
       <div className="grid grid-cols-3 gap-3">
@@ -621,7 +704,22 @@ function ScheduledView({
                     <span style={{ color: 'var(--color-secondary)', fontSize: 11.5 }}>{post.engagement}</span>
                   </div>
                 </div>
-                <div className="flex gap-1.5 shrink-0">
+                <div className="flex gap-1.5 shrink-0 items-center">
+                  <Ghost.Popover zone="studio.post-preview" id={`preview-${post.id}`} placement="right">
+                    <Ghost.Popover.Trigger asChild>
+                      <button className="text-[10px] text-[var(--color-secondary)] hover:text-[var(--color-accent-text)] transition-colors cursor-pointer px-2 py-0.5 rounded hover:bg-white/[0.04]">
+                        Preview
+                      </button>
+                    </Ghost.Popover.Trigger>
+                    <Ghost.Popover.Content className="w-64 bg-[var(--color-card)] border border-[var(--color-line)] rounded-xl p-3 shadow-2xl shadow-black/60">
+                      <div className="text-[10px] text-[var(--color-secondary)] mb-2 flex items-center gap-1.5">
+                        <span className="w-1.5 h-1.5 rounded-full shrink-0" style={{ background: CHANNELS.find(c => c.id === post.platform)?.dot }} />
+                        {CHANNELS.find(c => c.id === post.platform)?.name}
+                      </div>
+                      <p className="text-[12px] text-[var(--color-fg)] leading-relaxed line-clamp-4">{post.text}</p>
+                      <div className="mt-2 text-[10px] text-[var(--color-secondary)]">{post.time}</div>
+                    </Ghost.Popover.Content>
+                  </Ghost.Popover>
                   <button
                     onClick={() => onEdit(post)}
                     className="flex items-center gap-1 rounded-lg px-2.5 py-1.5 text-xs font-medium transition-colors"
@@ -1276,8 +1374,20 @@ export function App(): ReactNode {
     analytics: 'Analytics',
   };
 
+  const STUDIO_COMMANDS: GhostCommand[] = [
+    { id: 'cmd-create',    label: 'New Post',         group: 'Create',   shortcut: '⌘N', onSelect: () => setNav('create')    },
+    { id: 'cmd-scheduled', label: 'View Scheduled',   group: 'Navigate', shortcut: '⌘S', onSelect: () => setNav('scheduled') },
+    { id: 'cmd-analytics', label: 'Analytics',        group: 'Navigate',                 onSelect: () => setNav('analytics') },
+    { id: 'cmd-overview',  label: 'Overview',         group: 'Navigate',                 onSelect: () => setNav('overview')  },
+    { id: 'cmd-twitter',   label: 'Post to Twitter/X',group: 'Quick Post',               onSelect: () => setNav('create')    },
+    { id: 'cmd-instagram', label: 'Post to Instagram',group: 'Quick Post',               onSelect: () => setNav('create')    },
+    { id: 'cmd-drafts',    label: 'View Drafts',      group: 'Navigate',                 onSelect: () => {}                  },
+  ];
+
   return (
     <GhostProvider persistence={localStorageAdapter('studio-v1')}>
+      <GhostCommandPaletteProvider>
+      <Ghost.CommandPalette zone="studio.cmd" commands={STUDIO_COMMANDS} />
       <div className="flex h-full overflow-hidden" style={{ background: 'var(--color-bg)' }}>
         <Sidebar nav={nav} onNav={setNav} />
 
@@ -1348,24 +1458,49 @@ export function App(): ReactNode {
       <ToastContainer toasts={toasts} />
       <GhostDemoBar />
       <GhostDevtools defaultOpen={true} />
+      </GhostCommandPaletteProvider>
     </GhostProvider>
   );
 }
 
 const STUDIO_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
-  { id: 'schedule', zone: 'studio.post-actions', count: 28 },
-  { id: 'publish',  zone: 'studio.post-actions', count: 18 },
-  { id: 'draft',    zone: 'studio.post-actions', count: 12 },
-  { id: 'preview',  zone: 'studio.post-actions', count:  5 },
-  { id: 'discard',  zone: 'studio.post-actions', count:  2 },
-  { id: 'twitter',  zone: 'studio.channels',     count: 35 },
-  { id: 'linkedin', zone: 'studio.channels',     count: 22 },
-  { id: 'instagram',zone: 'studio.channels',     count: 15 },
-  { id: 'youtube',  zone: 'studio.channels',     count:  6 },
-  { id: 'create',   zone: 'studio.nav',          count: 40 },
-  { id: 'overview', zone: 'studio.nav',          count: 25 },
-  { id: 'scheduled',zone: 'studio.nav',          count: 18 },
-  { id: 'analytics',zone: 'studio.nav',          count: 10 },
+  { id: 'schedule',     zone: 'studio.post-actions',   count: 28 },
+  { id: 'publish',      zone: 'studio.post-actions',   count: 18 },
+  { id: 'draft',        zone: 'studio.post-actions',   count: 12 },
+  { id: 'preview',      zone: 'studio.post-actions',   count:  5 },
+  { id: 'discard',      zone: 'studio.post-actions',   count:  2 },
+  { id: 'twitter',      zone: 'studio.channels',       count: 35 },
+  { id: 'linkedin',     zone: 'studio.channels',       count: 22 },
+  { id: 'instagram',    zone: 'studio.channels',       count: 15 },
+  { id: 'youtube',      zone: 'studio.channels',       count:  6 },
+  { id: 'create',       zone: 'studio.nav',            count: 40 },
+  { id: 'overview',     zone: 'studio.nav',            count: 25 },
+  { id: 'scheduled',    zone: 'studio.nav',            count: 18 },
+  { id: 'analytics',    zone: 'studio.nav',            count: 10 },
+  { id: 'tb-bold',      zone: 'studio.editor-toolbar', count: 35 },
+  { id: 'tb-emoji',     zone: 'studio.editor-toolbar', count: 28 },
+  { id: 'tb-image',     zone: 'studio.editor-toolbar', count: 20 },
+  { id: 'tb-link',      zone: 'studio.editor-toolbar', count: 15 },
+  { id: 'tb-italic',    zone: 'studio.editor-toolbar', count: 10 },
+  { id: 'tb-thread',    zone: 'studio.editor-toolbar', count:  6 },
+  { id: 'twitter',      zone: 'studio.platform-select', count: 45 },
+  { id: 'instagram',    zone: 'studio.platform-select', count: 38 },
+  { id: 'linkedin',     zone: 'studio.platform-select', count: 20 },
+  { id: 'youtube',      zone: 'studio.platform-select', count:  8 },
+  { id: 'schedule',     zone: 'studio.post-action',    count: 42 },
+  { id: 'publish-now',  zone: 'studio.post-action',    count: 28 },
+  { id: 'save-draft',   zone: 'studio.post-action',    count: 15 },
+  { id: 'today-3pm',    zone: 'studio.schedule-time',  count: 30 },
+  { id: 'tomorrow-9am', zone: 'studio.schedule-time',  count: 25 },
+  { id: 'today-6pm',    zone: 'studio.schedule-time',  count: 18 },
+  { id: 'today-9pm',    zone: 'studio.schedule-time',  count: 12 },
+  { id: 'preview-1',    zone: 'studio.post-preview',   count: 20 },
+  { id: 'preview-2',    zone: 'studio.post-preview',   count: 15 },
+  { id: 'preview-3',    zone: 'studio.post-preview',   count: 10 },
+  { id: 'cmd-create',   zone: 'studio.cmd',            count: 35 },
+  { id: 'cmd-scheduled',zone: 'studio.cmd',            count: 22 },
+  { id: 'cmd-twitter',  zone: 'studio.cmd',            count: 18 },
+  { id: 'cmd-analytics',zone: 'studio.cmd',            count: 12 },
 ];
 
 function GhostDemoBar() {
