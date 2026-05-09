@@ -1,5 +1,5 @@
-import { useState, useMemo, useEffect, type ReactNode } from 'react';
-import { GhostProvider, Ghost, GhostMenu, useGhostEngine } from '@ghost-ui/react';
+import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
+import { GhostProvider, Ghost, GhostMenu, GhostToastProvider, useGhostEngine, useGhostToast } from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
 import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 
@@ -98,9 +98,11 @@ function lc(l: string) {
 export function App() {
   return (
     <GhostProvider persistence={localStorageAdapter('orbit-v3')}>
-      <OrbitShell />
-      <GhostDemoBar />
-      <GhostDevtools defaultOpen={true} />
+      <GhostToastProvider position="bottom-right">
+        <OrbitShell />
+        <GhostDemoBar />
+        <GhostDevtools defaultOpen={true} />
+      </GhostToastProvider>
     </GhostProvider>
   );
 }
@@ -766,10 +768,19 @@ const ORBIT_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
   { id: 'nav-my',      zone: 'orbit.nav',     count:  8 },
 ];
 
+const TOAST_DEMOS = [
+  { zone: 'orbit.actions', variant: 'success' as const, message: 'ORB-004 resolved by Maya Chen', action: { label: 'View', onClick: () => {} } },
+  { zone: 'orbit.nav',     variant: 'info' as const,    message: '3 new issues added to Sprint 14' },
+  { zone: 'orbit.actions', variant: 'warning' as const, message: 'Merge conflict on ORB-006 branch', action: { label: 'Resolve', onClick: () => {} } },
+  { zone: 'orbit.nav',     variant: 'error' as const,   message: 'CI failed on Platform — 2 tests broke' },
+];
+
 function GhostDemoBar() {
   const engine = useGhostEngine();
+  const { toast } = useGhostToast();
   const [eventCount, setEventCount] = useState(() => engine.events().length);
   const [simulated, setSimulated] = useState(false);
+  const toastIdx = useRef(0);
 
   useEffect(() => engine.subscribe(() => setEventCount(engine.events().length)), [engine]);
 
@@ -791,6 +802,12 @@ function GhostDemoBar() {
     setSimulated(false);
   }
 
+  function handleToast() {
+    const demo = TOAST_DEMOS[toastIdx.current % TOAST_DEMOS.length]!;
+    toastIdx.current += 1;
+    toast(demo);
+  }
+
   return (
     <div className="fixed bottom-4 left-4 z-[9999] flex flex-col gap-2.5 rounded-xl border border-white/[0.08] bg-[#060609]/90 backdrop-blur-md p-3.5 w-60 shadow-2xl shadow-black/60">
       <div className="flex items-center justify-between">
@@ -804,6 +821,12 @@ function GhostDemoBar() {
         className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${simulated ? 'bg-[#5c5ef0]/15 text-[#8b8df8] cursor-default' : 'bg-[#5c5ef0] text-white hover:bg-[#4e50e0] active:scale-[0.97]'}`}
       >
         {simulated ? '✓ Simulated' : '⚡ Simulate 4-week usage'}
+      </button>
+      <button
+        onClick={handleToast}
+        className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-[#8b8df8] bg-[#5c5ef0]/[0.08] hover:bg-[#5c5ef0]/[0.14] border border-[#5c5ef0]/[0.18] transition-all"
+      >
+        🔔 Fire a Ghost toast
       </button>
       <button
         onClick={handleReset}

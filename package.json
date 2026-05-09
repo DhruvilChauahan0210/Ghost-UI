@@ -9,10 +9,14 @@
     "test": "turbo run test",
     "lint": "biome check .",
     "format": "biome format --write .",
-    "playground": "pnpm --filter @ghost-ui/playground dev"
+    "playground": "pnpm --filter @ghost-ui/playground dev",
+    "changeset": "changeset",
+    "version": "changeset version",
+    "release": "turbo run build && changeset publish"
   },
   "devDependencies": {
     "@biomejs/biome": "^1.9.4",
+    "@changesets/cli": "^2.31.0",
     "turbo": "^2.3.3",
     "typescript": "^5.6.3"
   },
