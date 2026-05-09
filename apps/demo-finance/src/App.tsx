@@ -1,7 +1,8 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { GhostProvider, Ghost } from '@ghost-ui/react';
-import { localStorageAdapter } from '@ghost-ui/core';
+import { GhostProvider, Ghost, useGhostEngine } from '@ghost-ui/react';
+import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
+import { GhostDevtools } from '@ghost-ui/devtools';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1239,6 +1240,75 @@ export function App() {
           onConfirm={handleTransferConfirm}
         />
       )}
+      <GhostDemoBar />
+      <GhostDevtools defaultOpen={true} />
     </GhostProvider>
+  );
+}
+
+const APEX_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
+  { id: 'invest',          zone: 'apex.actions',        count: 42 },
+  { id: 'transfer',        zone: 'apex.actions',        count: 28 },
+  { id: 'deposit',         zone: 'apex.actions',        count: 14 },
+  { id: 'withdraw',        zone: 'apex.actions',        count:  7 },
+  { id: 'statement',       zone: 'apex.actions',        count:  3 },
+  { id: 'portfolio',       zone: 'apex.nav',            count: 35 },
+  { id: 'markets',         zone: 'apex.nav',            count: 25 },
+  { id: 'trade',           zone: 'apex.nav',            count: 20 },
+  { id: 'history',         zone: 'apex.nav',            count:  8 },
+  { id: 'buy',             zone: 'apex.trade-side',     count: 30 },
+  { id: 'sell',            zone: 'apex.trade-side',     count: 12 },
+  { id: 'filter-buys',     zone: 'apex.history-filter', count: 22 },
+  { id: 'filter-all',      zone: 'apex.history-filter', count: 15 },
+  { id: 'filter-sells',    zone: 'apex.history-filter', count:  8 },
+  { id: 'filter-dividends',zone: 'apex.history-filter', count:  4 },
+];
+
+function GhostDemoBar() {
+  const engine = useGhostEngine();
+  const [eventCount, setEventCount] = useState(() => engine.events().length);
+  const [simulated, setSimulated] = useState(false);
+
+  useEffect(() => engine.subscribe(() => setEventCount(engine.events().length)), [engine]);
+
+  function handleSimulate() {
+    const now = Date.now();
+    const DAY = 86_400_000;
+    const events: GhostEvent[] = APEX_SIM_EVENTS.flatMap(({ id, zone, count }) =>
+      Array.from({ length: count }, () => ({
+        id, zone, type: 'click' as const,
+        ts: now - Math.pow(Math.random(), 1.5) * 28 * DAY,
+      }))
+    ).sort((a, b) => a.ts - b.ts);
+    engine._injectEvents(events);
+    setSimulated(true);
+  }
+
+  function handleReset() {
+    engine.reset();
+    setSimulated(false);
+  }
+
+  return (
+    <div className="fixed bottom-4 left-4 z-[9999] flex flex-col gap-2.5 rounded-xl border border-white/[0.08] bg-bg/90 backdrop-blur-md p-3.5 w-60 shadow-2xl shadow-black/60">
+      <div className="flex items-center justify-between">
+        <span className="font-bold text-accent-text tracking-widest uppercase text-[9px]">Ghost Engine</span>
+        <span className="rounded-full bg-accent-dim text-accent-text px-2 py-0.5 text-[10px] font-mono tabular-nums">{eventCount} events</span>
+      </div>
+      <p className="text-[10px] text-muted leading-relaxed">Inject 4 weeks of realistic usage — watch Ghost UI reorder actions and filters by investment behavior.</p>
+      <button
+        onClick={handleSimulate}
+        disabled={simulated}
+        className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all active:scale-[0.97] ${simulated ? 'bg-accent-dim text-accent-text cursor-default' : 'bg-accent text-white hover:opacity-90'}`}
+      >
+        {simulated ? '✓ Simulated' : '⚡ Simulate 4-week usage'}
+      </button>
+      <button
+        onClick={handleReset}
+        className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-muted hover:text-secondary hover:bg-white/[0.04] transition-all"
+      >
+        ↺ Reset all scores
+      </button>
+    </div>
   );
 }

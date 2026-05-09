@@ -12,7 +12,8 @@
     "@ghost-ui/core": "workspace:*",
     "@ghost-ui/react": "workspace:*",
     "react": "^19.0.0",
-    "react-dom": "^19.0.0"
+    "react-dom": "^19.0.0",
+    "@ghost-ui/devtools": "workspace:*"
   },
   "devDependencies": {
     "@tailwindcss/vite": "^4.2.4",

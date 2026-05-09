@@ -1,7 +1,7 @@
-import { useState, useMemo } from 'react';
-import { GhostProvider, Ghost } from '@ghost-ui/react';
+import { useState, useMemo, useEffect } from 'react';
+import { GhostProvider, Ghost, useGhostEngine } from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
-import { localStorageAdapter } from '@ghost-ui/core';
+import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 
 interface Product {
   id: string;
@@ -45,7 +45,8 @@ export function App() {
   return (
     <GhostProvider persistence={localStorageAdapter('luxe-v3')}>
       <LuxeApp />
-      <GhostDevtools defaultOpen={false} />
+      <GhostDemoBar />
+      <GhostDevtools defaultOpen={true} />
     </GhostProvider>
   );
 }
@@ -517,3 +518,62 @@ function IcSearch() { return <svg width="16" height="16" viewBox="0 0 16 16" fil
 function IcSort() { return <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 4h12M4 8h8M6 12h4" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>; }
 function IcFilter() { return <svg width="13" height="13" viewBox="0 0 16 16" fill="none"><path d="M2 3.5h12l-4.5 5.5v4l-3-1.5V9L2 3.5z" stroke="currentColor" strokeWidth="1.5" strokeLinejoin="round"/></svg>; }
 function IcClose() { return <svg width="14" height="14" viewBox="0 0 16 16" fill="none"><path d="M4 4l8 8M12 4l-8 8" stroke="currentColor" strokeWidth="1.5" strokeLinecap="round"/></svg>; }
+
+const LUXE_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
+  { id: 'cat-All',         zone: 'luxe.categories',     count: 15 },
+  { id: 'cat-Women',       zone: 'luxe.categories',     count:  8 },
+  { id: 'cat-Men',         zone: 'luxe.categories',     count:  4 },
+  { id: 'cat-Accessories', zone: 'luxe.categories',     count: 22 },
+  { id: 'act-bag',         zone: 'luxe.product-actions', count: 38 },
+  { id: 'act-wishlist',    zone: 'luxe.product-actions', count: 24 },
+  { id: 'act-quickview',   zone: 'luxe.product-actions', count: 10 },
+];
+
+function GhostDemoBar() {
+  const engine = useGhostEngine();
+  const [eventCount, setEventCount] = useState(() => engine.events().length);
+  const [simulated, setSimulated] = useState(false);
+
+  useEffect(() => engine.subscribe(() => setEventCount(engine.events().length)), [engine]);
+
+  function handleSimulate() {
+    const now = Date.now();
+    const DAY = 86_400_000;
+    const events: GhostEvent[] = LUXE_SIM_EVENTS.flatMap(({ id, zone, count }) =>
+      Array.from({ length: count }, () => ({
+        id, zone, type: 'click' as const,
+        ts: now - Math.pow(Math.random(), 1.5) * 28 * DAY,
+      }))
+    ).sort((a, b) => a.ts - b.ts);
+    engine._injectEvents(events);
+    setSimulated(true);
+  }
+
+  function handleReset() {
+    engine.reset();
+    setSimulated(false);
+  }
+
+  return (
+    <div className="fixed bottom-4 left-4 z-[9999] flex flex-col gap-2.5 rounded-xl border border-white/[0.08] bg-[#0a0804]/90 backdrop-blur-md p-3.5 w-60 shadow-2xl shadow-black/60">
+      <div className="flex items-center justify-between">
+        <span className="font-bold text-[#c9a05a] tracking-widest uppercase text-[9px]">Ghost Engine</span>
+        <span className="rounded-full bg-[#b5892a]/20 text-[#c9a05a] px-2 py-0.5 text-[10px] font-mono tabular-nums">{eventCount} events</span>
+      </div>
+      <p className="text-[10px] text-[#5a4a2a] leading-relaxed">Inject 4 weeks of realistic usage — watch Ghost UI reorder categories and actions by purchase intent.</p>
+      <button
+        onClick={handleSimulate}
+        disabled={simulated}
+        className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${simulated ? 'bg-[#b5892a]/15 text-[#c9a05a] cursor-default' : 'bg-[#b5892a] text-white hover:bg-[#9e7622] active:scale-[0.97]'}`}
+      >
+        {simulated ? '✓ Simulated' : '⚡ Simulate 4-week usage'}
+      </button>
+      <button
+        onClick={handleReset}
+        className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-[#5a4a2a] hover:text-[#8a7450] hover:bg-white/[0.04] transition-all"
+      >
+        ↺ Reset all scores
+      </button>
+    </div>
+  );
+}

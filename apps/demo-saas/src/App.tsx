@@ -1,7 +1,7 @@
-import { useState, useMemo, type ReactNode } from 'react';
-import { GhostProvider, Ghost } from '@ghost-ui/react';
+import { useState, useMemo, useEffect, type ReactNode } from 'react';
+import { GhostProvider, Ghost, useGhostEngine } from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
-import { localStorageAdapter } from '@ghost-ui/core';
+import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 
 type Status = 'todo' | 'in-progress' | 'in-review' | 'done' | 'cancelled';
 type Priority = 'urgent' | 'high' | 'medium' | 'low' | 'none';
@@ -99,7 +99,8 @@ export function App() {
   return (
     <GhostProvider persistence={localStorageAdapter('orbit-v3')}>
       <OrbitShell />
-      <GhostDevtools defaultOpen={false} />
+      <GhostDemoBar />
+      <GhostDevtools defaultOpen={true} />
     </GhostProvider>
   );
 }
@@ -703,3 +704,64 @@ function IcX()       { return <svg width="13" height="13" viewBox="0 0 14 14" fi
 function IcDots()    { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><circle cx="3" cy="7" r="1" fill="currentColor"/><circle cx="7" cy="7" r="1" fill="currentColor"/><circle cx="11" cy="7" r="1" fill="currentColor"/></svg>; }
 function IcChevronRight() { return <svg width="10" height="10" viewBox="0 0 10 10" fill="none"><path d="M3.5 2.5L6 5l-2.5 2.5" stroke="currentColor" strokeWidth="1.3" strokeLinecap="round" strokeLinejoin="round"/></svg>; }
 function IcSend()    { return <svg width="13" height="13" viewBox="0 0 14 14" fill="none"><path d="M12 7L2 2l2.5 5L2 12l10-5z" stroke="currentColor" strokeWidth="1.3" strokeLinejoin="round"/></svg>; }
+
+const ORBIT_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
+  { id: 'act-resolve', zone: 'orbit.actions', count: 32 },
+  { id: 'act-comment', zone: 'orbit.actions', count: 18 },
+  { id: 'act-assign',  zone: 'orbit.actions', count: 10 },
+  { id: 'act-label',   zone: 'orbit.actions', count:  4 },
+  { id: 'act-archive', zone: 'orbit.actions', count:  2 },
+  { id: 'nav-all',     zone: 'orbit.nav',     count: 30 },
+  { id: 'nav-inbox',   zone: 'orbit.nav',     count: 20 },
+  { id: 'nav-cycles',  zone: 'orbit.nav',     count: 15 },
+  { id: 'nav-my',      zone: 'orbit.nav',     count:  8 },
+];
+
+function GhostDemoBar() {
+  const engine = useGhostEngine();
+  const [eventCount, setEventCount] = useState(() => engine.events().length);
+  const [simulated, setSimulated] = useState(false);
+
+  useEffect(() => engine.subscribe(() => setEventCount(engine.events().length)), [engine]);
+
+  function handleSimulate() {
+    const now = Date.now();
+    const DAY = 86_400_000;
+    const events: GhostEvent[] = ORBIT_SIM_EVENTS.flatMap(({ id, zone, count }) =>
+      Array.from({ length: count }, () => ({
+        id, zone, type: 'click' as const,
+        ts: now - Math.pow(Math.random(), 1.5) * 28 * DAY,
+      }))
+    ).sort((a, b) => a.ts - b.ts);
+    engine._injectEvents(events);
+    setSimulated(true);
+  }
+
+  function handleReset() {
+    engine.reset();
+    setSimulated(false);
+  }
+
+  return (
+    <div className="fixed bottom-4 left-4 z-[9999] flex flex-col gap-2.5 rounded-xl border border-white/[0.08] bg-[#060609]/90 backdrop-blur-md p-3.5 w-60 shadow-2xl shadow-black/60">
+      <div className="flex items-center justify-between">
+        <span className="font-bold text-[#8b8df8] tracking-widest uppercase text-[9px]">Ghost Engine</span>
+        <span className="rounded-full bg-[#5c5ef0]/20 text-[#8b8df8] px-2 py-0.5 text-[10px] font-mono tabular-nums">{eventCount} events</span>
+      </div>
+      <p className="text-[10px] text-[#4a5568] leading-relaxed">Inject 4 weeks of realistic usage — watch Ghost UI reorder actions by learned click frequency.</p>
+      <button
+        onClick={handleSimulate}
+        disabled={simulated}
+        className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all ${simulated ? 'bg-[#5c5ef0]/15 text-[#8b8df8] cursor-default' : 'bg-[#5c5ef0] text-white hover:bg-[#4e50e0] active:scale-[0.97]'}`}
+      >
+        {simulated ? '✓ Simulated' : '⚡ Simulate 4-week usage'}
+      </button>
+      <button
+        onClick={handleReset}
+        className="rounded-lg px-3 py-1.5 text-[11px] font-medium text-[#4a5568] hover:text-[#8892a4] hover:bg-white/[0.04] transition-all"
+      >
+        ↺ Reset all scores
+      </button>
+    </div>
+  );
+}

@@ -66,6 +66,9 @@ importers:
       '@ghost-ui/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ghost-ui/devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
       '@ghost-ui/react':
         specifier: workspace:*
         version: link:../../packages/react
@@ -146,6 +149,9 @@ importers:
       '@ghost-ui/core':
         specifier: workspace:*
         version: link:../../packages/core
+      '@ghost-ui/devtools':
+        specifier: workspace:*
+        version: link:../../packages/devtools
       '@ghost-ui/react':
         specifier: workspace:*
         version: link:../../packages/react

@@ -1,6 +1,8 @@
 import type { ReactNode } from 'react';
-import { useState, useRef } from 'react';
-import { Ghost, GhostProvider, localStorageAdapter } from '@ghost-ui/react';
+import { useState, useRef, useEffect } from 'react';
+import { Ghost, GhostProvider, localStorageAdapter, useGhostEngine } from '@ghost-ui/react';
+import { GhostDevtools } from '@ghost-ui/devtools';
+import type { GhostEvent } from '@ghost-ui/core';
 
 // ─── Types ────────────────────────────────────────────────────────────────────
 
@@ -1344,6 +1346,78 @@ export function App(): ReactNode {
       )}
 
       <ToastContainer toasts={toasts} />
+      <GhostDemoBar />
+      <GhostDevtools defaultOpen={true} />
     </GhostProvider>
+  );
+}
+
+const STUDIO_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
+  { id: 'schedule', zone: 'studio.post-actions', count: 28 },
+  { id: 'publish',  zone: 'studio.post-actions', count: 18 },
+  { id: 'draft',    zone: 'studio.post-actions', count: 12 },
+  { id: 'preview',  zone: 'studio.post-actions', count:  5 },
+  { id: 'discard',  zone: 'studio.post-actions', count:  2 },
+  { id: 'twitter',  zone: 'studio.channels',     count: 35 },
+  { id: 'linkedin', zone: 'studio.channels',     count: 22 },
+  { id: 'instagram',zone: 'studio.channels',     count: 15 },
+  { id: 'youtube',  zone: 'studio.channels',     count:  6 },
+  { id: 'create',   zone: 'studio.nav',          count: 40 },
+  { id: 'overview', zone: 'studio.nav',          count: 25 },
+  { id: 'scheduled',zone: 'studio.nav',          count: 18 },
+  { id: 'analytics',zone: 'studio.nav',          count: 10 },
+];
+
+function GhostDemoBar() {
+  const engine = useGhostEngine();
+  const [eventCount, setEventCount] = useState(() => engine.events().length);
+  const [simulated, setSimulated] = useState(false);
+
+  useEffect(() => engine.subscribe(() => setEventCount(engine.events().length)), [engine]);
+
+  function handleSimulate() {
+    const now = Date.now();
+    const DAY = 86_400_000;
+    const events: GhostEvent[] = STUDIO_SIM_EVENTS.flatMap(({ id, zone, count }) =>
+      Array.from({ length: count }, () => ({
+        id, zone, type: 'click' as const,
+        ts: now - Math.pow(Math.random(), 1.5) * 28 * DAY,
+      }))
+    ).sort((a, b) => a.ts - b.ts);
+    engine._injectEvents(events);
+    setSimulated(true);
+  }
+
+  function handleReset() {
+    engine.reset();
+    setSimulated(false);
+  }
+
+  return (
+    <div className="fixed bottom-4 left-4 z-[9999] flex flex-col gap-2.5 rounded-xl border border-white/[0.08] bg-[#080b10]/90 backdrop-blur-md p-3.5 w-60 shadow-2xl shadow-black/60">
+      <div className="flex items-center justify-between">
+        <span className="font-bold tracking-widest uppercase text-[9px]" style={{ color: 'var(--color-accent-text)' }}>Ghost Engine</span>
+        <span className="rounded-full px-2 py-0.5 text-[10px] font-mono tabular-nums" style={{ background: 'var(--color-accent-dim)', color: 'var(--color-accent-text)' }}>{eventCount} events</span>
+      </div>
+      <p className="text-[10px] leading-relaxed" style={{ color: 'var(--color-muted)' }}>Inject 4 weeks of realistic usage — watch Ghost UI reorder nav and post actions by learned frequency.</p>
+      <button
+        onClick={handleSimulate}
+        disabled={simulated}
+        className={`rounded-lg px-3 py-1.5 text-[11px] font-semibold transition-all active:scale-[0.97] ${simulated ? 'cursor-default' : ''}`}
+        style={simulated
+          ? { background: 'var(--color-accent-dim)', color: 'var(--color-accent-text)' }
+          : { background: 'var(--color-accent)', color: '#fff' }
+        }
+      >
+        {simulated ? '✓ Simulated' : '⚡ Simulate 4-week usage'}
+      </button>
+      <button
+        onClick={handleReset}
+        className="rounded-lg px-3 py-1.5 text-[11px] font-medium transition-all hover:bg-white/[0.04]"
+        style={{ color: 'var(--color-muted)' }}
+      >
+        ↺ Reset all scores
+      </button>
+    </div>
   );
 }
