@@ -6,6 +6,7 @@ import { MagneticButton } from './MagneticButton';
 import { MouseTracker } from './MouseTracker';
 import { Reveal } from './Reveal';
 import { ScrollProgress } from './ScrollProgress';
+import { ShowcaseSection } from './ShowcaseSection';
 import { TiltCard } from './TiltCard';
 
 const BRAND_MARK = "relative inline-block h-[22px] w-[22px] rounded-md bg-[conic-gradient(from_220deg_at_50%_50%,#c4b5fd,#8b5cf6,#38bdf8,#c4b5fd)] shadow-[inset_0_0_0_1px_rgba(255,255,255,0.20),0_0_14px_rgba(167,139,250,0.40)] transition-transform duration-[600ms] ease-[cubic-bezier(0.2,0.7,0.2,1)] after:absolute after:inset-[5px] after:rounded after:bg-[rgba(10,10,14,0.95)] after:shadow-[inset_0_0_0_1px_rgba(255,255,255,0.06)] after:content-['']";
@@ -96,6 +97,7 @@ export default function Page() {
             <a className={NAV_LINK} href="#how">Architecture</a>
             <a className={NAV_LINK} href="#install">Install</a>
             <a className={NAV_LINK} href="#principles">Principles</a>
+            <a className={NAV_LINK} href="#showcase">Showcase</a>
           </nav>
           <span className="mx-1 h-5 w-px bg-line-2" aria-hidden />
           <a
@@ -375,6 +377,8 @@ export default function Page() {
             </Reveal>
           </div>
         </section>
+
+        <ShowcaseSection />
 
         <section className="py-[clamp(80px,10vw,140px)]">
           <div className="mx-auto max-w-(--container-site) px-[clamp(20px,4vw,32px)]">
