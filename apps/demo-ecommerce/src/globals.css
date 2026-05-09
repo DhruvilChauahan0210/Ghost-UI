@@ -1,25 +1,27 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg:       #060604;
-  --color-surface:  #0b0b09;
-  --color-card:     #101010;
-  --color-fg:       #ede8df;
-  --color-muted:    #88837a;
-  --color-faint:    #47443e;
+  --color-bg:       #f8f5f0;
+  --color-surface:  #ffffff;
+  --color-card:     #ffffff;
+  --color-fg:       #1a1714;
+  --color-muted:    #6e6560;
+  --color-faint:    #a09890;
 
-  --color-line:     rgba(255, 255, 255, 0.055);
-  --color-line-2:   rgba(255, 255, 255, 0.095);
+  --color-line:     rgba(26, 23, 20, 0.09);
+  --color-line-2:   rgba(26, 23, 20, 0.16);
 
-  --color-gold:     #c4a35a;
-  --color-gold-2:   #e8c97e;
-  --color-gold-dim: rgba(196, 163, 90, 0.12);
+  --color-warm:     #b5892a;
+  --color-warm-bg:  rgba(181, 137, 42, 0.10);
+  --color-sale:     #b53a22;
+  --color-sale-bg:  rgba(181, 58, 34, 0.08);
+  --color-new-bg:   rgba(26, 23, 20, 0.07);
 
-  --font-sans:    'Jost', ui-sans-serif, system-ui, sans-serif;
-  --font-display: 'Cormorant Garamond', Georgia, 'Times New Roman', serif;
+  --font-display: 'Playfair Display', Georgia, 'Times New Roman', serif;
+  --font-sans:    'DM Sans', ui-sans-serif, system-ui, sans-serif;
 }
 
-:root { color-scheme: dark; }
+:root { color-scheme: light; }
 
 *, *::before, *::after { box-sizing: border-box; }
 
@@ -29,27 +31,29 @@ html, body, #root {
 }
 
 body {
-  background: #060604;
-  color: #ede8df;
-  font-family: 'Jost', ui-sans-serif, system-ui, sans-serif;
+  background: #f8f5f0;
+  color: #1a1714;
+  font-family: 'DM Sans', ui-sans-serif, system-ui, sans-serif;
   -webkit-font-smoothing: antialiased;
   -moz-osx-font-smoothing: grayscale;
-  font-weight: 300;
+  font-weight: 400;
+  font-size: 15px;
+  line-height: 1.6;
 }
 
-::selection { background: rgba(196, 163, 90, 0.28); color: #ede8df; }
+::selection { background: rgba(181, 137, 42, 0.25); color: #1a1714; }
 
 @keyframes fade-up {
-  from { opacity: 0; transform: translateY(20px); }
+  from { opacity: 0; transform: translateY(14px); }
   to   { opacity: 1; transform: none; }
 }
 
-@keyframes actions-reveal {
-  from { opacity: 0; transform: translateY(8px); }
+@keyframes overlay-in {
+  from { opacity: 0; transform: translateY(6px); }
   to   { opacity: 1; transform: none; }
 }
 
 @keyframes shimmer {
-  0%   { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0%   { background-position: -400% 0; }
+  100% { background-position: 400% 0; }
 }
