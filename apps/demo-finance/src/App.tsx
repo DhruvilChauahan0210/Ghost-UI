@@ -1,6 +1,6 @@
 import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
-import { GhostProvider, Ghost, useGhostEngine } from '@ghost-ui/react';
+import { GhostProvider, Ghost, GhostPrivacyPanel, useGhostEngine } from '@ghost-ui/react';
 import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 import { GhostDevtools } from '@ghost-ui/devtools';
 
@@ -688,6 +688,27 @@ function PortfolioView({ onAction }: PortfolioViewProps) {
           </div>
         </div>
 
+        {/* Holdings map — Ghost.Canvas floats most-viewed tickers toward top-left */}
+        <div className="bg-card rounded-xl border border-line p-4">
+          <div className="flex items-center justify-between mb-3">
+            <span className="text-[12px] font-medium text-secondary">Holdings Map</span>
+            <span className="text-[10px] font-mono text-secondary/50">most-watched drift top-left</span>
+          </div>
+          <Ghost.Canvas zone="apex.holdings" style={{ height: 120, borderRadius: 8, background: 'rgba(255,255,255,0.02)', border: '1px solid rgba(255,255,255,0.05)' }}>
+            {POSITIONS.map(pos => (
+              <Ghost.Item key={pos.ticker} id={`holding-${pos.ticker.toLowerCase()}`} zone="apex.holdings"
+                className="flex flex-col items-center gap-0.5 cursor-pointer select-none"
+                style={{ transform: 'translate(-50%, -50%)' }}
+              >
+                <span className="text-[11px] font-bold font-mono text-fg">{pos.ticker}</span>
+                <span className={`text-[9px] font-mono ${pos.change >= 0 ? 'text-green-400' : 'text-red-400'}`}>
+                  {pos.change >= 0 ? '+' : ''}{pos.change.toFixed(2)}%
+                </span>
+              </Ghost.Item>
+            ))}
+          </Ghost.Canvas>
+        </div>
+
         {/* Positions table */}
         <div className="bg-card rounded-xl border border-line overflow-hidden">
           <div className="flex items-center justify-between px-4 py-3 border-b border-line">
@@ -1262,6 +1283,12 @@ const APEX_SIM_EVENTS: Array<{ id: string; zone: string; count: number }> = [
   { id: 'filter-all',      zone: 'apex.history-filter', count: 15 },
   { id: 'filter-sells',    zone: 'apex.history-filter', count:  8 },
   { id: 'filter-dividends',zone: 'apex.history-filter', count:  4 },
+  { id: 'holding-nvda',    zone: 'apex.holdings',       count: 45 },
+  { id: 'holding-aapl',    zone: 'apex.holdings',       count: 38 },
+  { id: 'holding-btc',     zone: 'apex.holdings',       count: 30 },
+  { id: 'holding-msft',    zone: 'apex.holdings',       count: 20 },
+  { id: 'holding-voo',     zone: 'apex.holdings',       count: 12 },
+  { id: 'holding-eth',     zone: 'apex.holdings',       count:  8 },
 ];
 
 function GhostDemoBar() {
@@ -1309,6 +1336,9 @@ function GhostDemoBar() {
       >
         ↺ Reset all scores
       </button>
+      <div className="border-t border-white/[0.06] pt-2.5">
+        <GhostPrivacyPanel style={{ borderRadius: 8, padding: '8px 10px', gap: 6 }} />
+      </div>
     </div>
   );
 }

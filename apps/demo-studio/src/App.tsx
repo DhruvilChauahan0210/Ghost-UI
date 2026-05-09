@@ -1,6 +1,6 @@
 import type { ReactNode } from 'react';
 import { useState, useRef, useEffect } from 'react';
-import { Ghost, GhostProvider, localStorageAdapter, useGhostEngine } from '@ghost-ui/react';
+import { Ghost, GhostProvider, GhostPrivacyPanel, localStorageAdapter, useGhostEngine } from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
 import type { GhostEvent } from '@ghost-ui/core';
 
@@ -1418,6 +1418,9 @@ function GhostDemoBar() {
       >
         ↺ Reset all scores
       </button>
+      <div className="border-t border-white/[0.06] pt-2.5">
+        <GhostPrivacyPanel style={{ borderRadius: 8, padding: '8px 10px', gap: 6 }} />
+      </div>
     </div>
   );
 }

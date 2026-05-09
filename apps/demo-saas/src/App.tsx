@@ -1,5 +1,5 @@
 import { useState, useMemo, useEffect, useRef, type ReactNode } from 'react';
-import { GhostProvider, Ghost, GhostMenu, GhostToastProvider, useGhostEngine, useGhostToast } from '@ghost-ui/react';
+import { GhostProvider, Ghost, GhostMenu, GhostToastProvider, GhostPrivacyPanel, useGhostEngine, useGhostToast } from '@ghost-ui/react';
 import { GhostDevtools } from '@ghost-ui/devtools';
 import { localStorageAdapter, type GhostEvent } from '@ghost-ui/core';
 
@@ -263,6 +263,7 @@ function Sidebar({ active, setActive }: { active: string; setActive: (id: string
             <IcDots />
           </button>
         </div>
+        <GhostPrivacyPanel style={{ borderRadius: 10, padding: '10px 12px', gap: 8 }} />
       </div>
     </div>
   );
@@ -277,6 +278,13 @@ function SidebarSection({ label, children, className = '' }: { label: string; ch
   );
 }
 
+const ASSIGNEES = [
+  { id: 'assignee-mc', initials: 'MC', name: 'Maya Chen',   ...AVATAR_CFG.MC },
+  { id: 'assignee-sr', initials: 'SR', name: 'Sam Rivera',  ...AVATAR_CFG.SR },
+  { id: 'assignee-pn', initials: 'PN', name: 'Priya Nair',  ...AVATAR_CFG.PN },
+  { id: 'assignee-at', initials: 'AT', name: 'Alex Torres', ...AVATAR_CFG.AT },
+];
+
 function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, activeNav }: {
   issues: Issue[];
   selected: Issue | null;
@@ -286,6 +294,10 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
   activeNav: string;
 }) {
   const navLabel = NAV_ITEMS.find(n => n.id === activeNav)?.label ?? 'All Issues';
+  const [assigneeQuery, setAssigneeQuery] = useState('');
+  const filteredAssignees = ASSIGNEES.filter(a =>
+    a.name.toLowerCase().includes(assigneeQuery.toLowerCase())
+  );
 
   const countFor = (v: Status | 'all') =>
     v === 'all' ? ISSUES.length : ISSUES.filter(i => i.status === v).length;
@@ -301,7 +313,43 @@ function IssueList({ issues, selected, onSelect, filterStatus, setFilterStatus, 
           <span className="text-[10px] text-[#2e2e42] bg-white/[0.05] border border-white/[0.08] px-1.5 py-0.5 rounded-md font-mono tabular-nums">{issues.length}</span>
         </div>
         <div className="ml-auto flex items-center gap-0.5">
-          {([['Filter', IcFilter], ['Sort', IcSort], ['Group', IcDisplay]] as Array<[string, () => ReactNode]>).map(([label, Icon]) => (
+          {/* Ghost.Combobox assignee filter */}
+          <Ghost.Combobox
+            zone="orbit.assignee-filter"
+            onQueryChange={setAssigneeQuery}
+            onSelect={(_, val) => setAssigneeQuery(val === 'All' ? '' : val)}
+            className="relative"
+          >
+            <Ghost.Combobox.Input
+              placeholder="Assignee…"
+              className="h-7 w-[90px] px-2 rounded-lg text-[11.5px] text-[#5a5a72] bg-transparent border border-transparent hover:border-white/[0.08] hover:bg-white/[0.04] focus:border-[#5c5ef0]/[0.3] focus:bg-white/[0.04] outline-none transition-all placeholder:text-[#2e2e42]"
+            />
+            <Ghost.Combobox.List
+              style={{
+                background: '#0e0e18',
+                border: '1px solid rgba(255,255,255,0.08)',
+                borderRadius: 10,
+                padding: '4px',
+                boxShadow: '0 8px 24px rgba(0,0,0,0.5)',
+              }}
+            >
+              {filteredAssignees.length === 0
+                ? <Ghost.Combobox.Empty style={{ padding: '8px 10px', fontSize: 11.5, color: '#3a3a52' }} />
+                : filteredAssignees.map(a => (
+                  <Ghost.Combobox.Option
+                    key={a.id}
+                    id={a.id}
+                    value={a.name}
+                    className="flex items-center gap-2 px-2.5 py-2 rounded-lg hover:bg-white/[0.05] transition-colors"
+                  >
+                    <div className={`h-4 w-4 rounded-full ${a.bg} border border-white/[0.07] flex items-center justify-center text-[7px] font-bold ${a.text} flex-none`}>{a.initials}</div>
+                    <span className="text-[12px] text-[#a8a8c2]">{a.name}</span>
+                  </Ghost.Combobox.Option>
+                ))
+              }
+            </Ghost.Combobox.List>
+          </Ghost.Combobox>
+          {([['Sort', IcSort], ['Group', IcDisplay]] as Array<[string, () => ReactNode]>).map(([label, Icon]) => (
             <button key={label} className="flex items-center gap-1.5 h-7 px-2.5 rounded-lg text-[11.5px] text-[#5a5a72] hover:text-[#b8b8cc] hover:bg-white/[0.05] transition-colors cursor-pointer">
               <span className="opacity-60"><Icon /></span>
               <span>{label}</span>
@@ -526,48 +574,40 @@ function DetailPanel({ issue, onClose }: {
             </div>
           </div>
 
-          {/* Metadata grid */}
-          <div className="grid grid-cols-2 gap-1.5">
+          {/* Metadata grid — Ghost.Grid promotes most-viewed fields to the primary area */}
+          <Ghost.Grid
+            zone="orbit.metadata"
+            gridTemplateAreas='"primary secondary" "primary tertiary"'
+            gridTemplateColumns="1fr 1fr"
+            gap="0.375rem"
+          >
+            <Ghost.Item id="meta-status" zone="orbit.metadata" className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">Status</p>
+              <span className="flex items-center gap-1.5" style={{ color: sm.color }}>
+                <sm.Icon />
+                <span className="text-[12px]">{sm.label}</span>
+              </span>
+            </Ghost.Item>
+            <Ghost.Item id="meta-priority" zone="orbit.metadata" className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">Priority</p>
+              <span className="flex items-center gap-1.5">
+                <PriorityDot priority={issue.priority} />
+                <span className="text-[12px] text-[#c8c8dc]">{pm.label}</span>
+              </span>
+            </Ghost.Item>
+            <Ghost.Item id="meta-assignee" zone="orbit.metadata" className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5">
+              <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">Assignee</p>
+              <span className="flex items-center gap-1.5">
+                <div className={`h-[18px] w-[18px] rounded-full ${av.bg} border border-white/[0.07] flex items-center justify-center text-[7.5px] font-bold ${av.text} flex-none`}>{issue.initials}</div>
+                <span className="text-[12px] text-[#c8c8dc] truncate">{issue.assignee}</span>
+              </span>
+            </Ghost.Item>
+          </Ghost.Grid>
+          <div className="grid grid-cols-3 gap-1.5">
             {[
-              {
-                label: 'Status',
-                value: (
-                  <span className="flex items-center gap-1.5" style={{ color: sm.color }}>
-                    <sm.Icon />
-                    <span className="text-[12px]">{sm.label}</span>
-                  </span>
-                ),
-              },
-              {
-                label: 'Priority',
-                value: (
-                  <span className="flex items-center gap-1.5">
-                    <PriorityDot priority={issue.priority} />
-                    <span className="text-[12px] text-[#c8c8dc]">{pm.label}</span>
-                  </span>
-                ),
-              },
-              {
-                label: 'Assignee',
-                value: (
-                  <span className="flex items-center gap-1.5">
-                    <div className={`h-[18px] w-[18px] rounded-full ${av.bg} border border-white/[0.07] flex items-center justify-center text-[7.5px] font-bold ${av.text} flex-none`}>{issue.initials}</div>
-                    <span className="text-[12px] text-[#c8c8dc] truncate">{issue.assignee}</span>
-                  </span>
-                ),
-              },
-              {
-                label: 'Project',
-                value: <span className="text-[12px] text-[#c8c8dc]">{issue.project}</span>,
-              },
-              {
-                label: 'Cycle',
-                value: <span className="text-[12px] text-[#c8c8dc]">{issue.cycle}</span>,
-              },
-              {
-                label: 'Updated',
-                value: <span className="text-[12px] text-[#5a5a72]">{issue.updatedAt} ago</span>,
-              },
+              { label: 'Project', value: <span className="text-[12px] text-[#c8c8dc]">{issue.project}</span> },
+              { label: 'Cycle',   value: <span className="text-[12px] text-[#c8c8dc]">{issue.cycle}</span> },
+              { label: 'Updated', value: <span className="text-[12px] text-[#5a5a72]">{issue.updatedAt} ago</span> },
             ].map(({ label, value }) => (
               <div key={label} className="bg-white/[0.02] border border-white/[0.05] rounded-lg px-3 py-2.5">
                 <p className="text-[9.5px] font-bold uppercase tracking-[0.09em] text-[#2e2e42] mb-1.5">{label}</p>
