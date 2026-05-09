@@ -2,6 +2,7 @@ export * from './context.js';
 export * from './hooks.js';
 export * from './components.js';
 export * from './privacy-badge.js';
+export { createWorkerOptimizer } from '@ghost-ui/core';
 export { GhostMenu, GhostMenuTrigger, GhostMenuContent, GhostMenuItem, GhostMenuSeparator } from './menu.js';
 export type { GhostMenuProps, GhostMenuTriggerProps, GhostMenuContentProps, GhostMenuItemProps, GhostMenuSeparatorProps, MenuPlacement } from './menu.js';
 export { GhostTab, GhostTabList, GhostTabItem, GhostTabPanel } from './tabs.js';

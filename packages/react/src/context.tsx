@@ -10,6 +10,41 @@ import {
   type ReactNode,
 } from 'react';
 
+// ─── Privacy context ──────────────────────────────────────────────────────────
+
+interface GhostPrivacyCtx {
+  optOut: boolean;
+  setOptOut: (v: boolean) => void;
+  clearData: () => Promise<void>;
+}
+
+const GhostPrivacyContext = createContext<GhostPrivacyCtx>({
+  optOut: false,
+  setOptOut: () => {},
+  clearData: async () => {},
+});
+
+const OPT_OUT_KEY = 'ghost-ui:opt-out';
+
+function readOptOut(): boolean {
+  try {
+    return localStorage.getItem(OPT_OUT_KEY) === '1';
+  } catch {
+    return false;
+  }
+}
+
+function writeOptOut(v: boolean): void {
+  try {
+    if (v) localStorage.setItem(OPT_OUT_KEY, '1');
+    else localStorage.removeItem(OPT_OUT_KEY);
+  } catch {
+    // ignore (SSR / private browsing)
+  }
+}
+
+// ─── Ghost context ────────────────────────────────────────────────────────────
+
 interface GhostContextValue {
   engine: GhostEngine;
   plan: LayoutPlan;
@@ -23,13 +58,60 @@ export interface GhostProviderProps extends EngineOptions {
   children: ReactNode;
   /** keyboard shortcut to reset learned layout. Default ⌘/Ctrl+Shift+G */
   resetHotkey?: boolean;
+  /**
+   * When true, Ghost UI stops recording events and returns default ordering.
+   * Persisted in localStorage. Controlled — when omitted Ghost manages it internally.
+   */
+  optOut?: boolean;
+  /** Called when the user changes the opt-out preference via useGhostPrivacy(). */
+  onOptOutChange?: (optOut: boolean) => void;
 }
 
-export function GhostProvider({ children, resetHotkey = true, ...opts }: GhostProviderProps) {
+export function GhostProvider({
+  children,
+  resetHotkey = true,
+  optOut: optOutProp,
+  onOptOutChange,
+  ...opts
+}: GhostProviderProps) {
   const engine = useMemo(() => new GhostEngine(opts), []);
   const [plan, setPlan] = useState<LayoutPlan>(engine.getPlan());
   const [hoveredNodeId, setHoveredNodeIdRaw] = useState<GhostId | null>(null);
   const setHoveredNodeId = useCallback((id: GhostId | null) => setHoveredNodeIdRaw(id), []);
+
+  // Uncontrolled opt-out state (persisted to localStorage)
+  const [internalOptOut, setInternalOptOut] = useState<boolean>(readOptOut);
+  const optOut = optOutProp ?? internalOptOut;
+
+  // Keep the original record method so we can restore it on opt-in
+  const originalRecord = useMemo(() => engine.record.bind(engine), [engine]);
+
+  // Suppress or restore recording based on opt-out state
+  useEffect(() => {
+    if (optOut) {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (engine as any).record = () => {};
+      void engine.reset();
+    } else {
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+      (engine as any).record = originalRecord;
+    }
+  }, [optOut, engine, originalRecord]);
+
+  const setOptOut = useCallback(
+    (v: boolean) => {
+      if (optOutProp === undefined) {
+        setInternalOptOut(v);
+        writeOptOut(v);
+      }
+      onOptOutChange?.(v);
+    },
+    [optOutProp, onOptOutChange],
+  );
+
+  const clearData = useCallback(async () => {
+    await engine.reset();
+  }, [engine]);
 
   useEffect(() => {
     void engine.init();
@@ -57,7 +139,17 @@ export function GhostProvider({ children, resetHotkey = true, ...opts }: GhostPr
     () => ({ engine, plan, hoveredNodeId, setHoveredNodeId }),
     [engine, plan, hoveredNodeId, setHoveredNodeId],
   );
-  return <GhostContext.Provider value={value}>{children}</GhostContext.Provider>;
+
+  const privacyValue = useMemo(
+    () => ({ optOut, setOptOut, clearData }),
+    [optOut, setOptOut, clearData],
+  );
+
+  return (
+    <GhostPrivacyContext.Provider value={privacyValue}>
+      <GhostContext.Provider value={value}>{children}</GhostContext.Provider>
+    </GhostPrivacyContext.Provider>
+  );
 }
 
 export function useGhostEngine(): GhostEngine {
@@ -77,4 +169,14 @@ export function useGhostHoveredNode(): [GhostId | null, (id: GhostId | null) => 
   const ctx = useContext(GhostContext);
   if (!ctx) return [null, () => {}];
   return [ctx.hoveredNodeId, ctx.setHoveredNodeId];
+}
+
+/**
+ * Returns privacy controls for Ghost UI.
+ * `optOut` — whether tracking is disabled.
+ * `setOptOut` — toggle tracking on/off (persisted to localStorage).
+ * `clearData` — erase all recorded events and reset layout to default.
+ */
+export function useGhostPrivacy(): GhostPrivacyCtx {
+  return useContext(GhostPrivacyContext);
 }

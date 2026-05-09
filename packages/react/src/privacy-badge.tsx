@@ -1,4 +1,5 @@
 import { useState, type CSSProperties } from 'react';
+import { useGhostPrivacy } from './context.js';
 
 export interface GhostPrivacyBadgeProps {
   /** Badge label. Defaults to "Learns locally · zero servers" */
@@ -155,4 +156,164 @@ export function GhostPrivacyBadge({
   }
 
   return <span {...shared}>{inner}</span>;
+}
+
+// ─── GhostPrivacyPanel ────────────────────────────────────────────────────────
+
+export interface GhostPrivacyPanelProps {
+  className?: string;
+  style?: CSSProperties;
+}
+
+/**
+ * A ready-made privacy control panel. Drop it anywhere inside a GhostProvider.
+ * Shows opt-out toggle and a clear-data button. Handles its own state via
+ * useGhostPrivacy() — no extra props needed.
+ */
+export function GhostPrivacyPanel({ className, style }: GhostPrivacyPanelProps) {
+  const { optOut, setOptOut, clearData } = useGhostPrivacy();
+  const [clearing, setClearing] = useState(false);
+  const [cleared, setCleared] = useState(false);
+
+  async function handleClear() {
+    setClearing(true);
+    await clearData();
+    setClearing(false);
+    setCleared(true);
+    setTimeout(() => setCleared(false), 2000);
+  }
+
+  const panelStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 12,
+    padding: '14px 16px',
+    borderRadius: 12,
+    background: 'rgba(255,255,255,0.04)',
+    border: '1px solid rgba(255,255,255,0.09)',
+    fontFamily: 'ui-sans-serif, system-ui, sans-serif',
+    fontSize: 12,
+    color: 'rgba(255,255,255,0.65)',
+    ...style,
+  };
+
+  const rowStyle: CSSProperties = {
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 12,
+  };
+
+  const labelStyle: CSSProperties = {
+    display: 'flex',
+    flexDirection: 'column',
+    gap: 2,
+  };
+
+  const descStyle: CSSProperties = {
+    fontSize: 11,
+    color: 'rgba(255,255,255,0.35)',
+    lineHeight: 1.4,
+  };
+
+  const toggleTrack: CSSProperties = {
+    position: 'relative',
+    display: 'inline-flex',
+    width: 36,
+    height: 20,
+    borderRadius: 10,
+    background: optOut ? 'rgba(255,255,255,0.12)' : 'rgba(92,94,240,0.80)',
+    border: '1px solid rgba(255,255,255,0.12)',
+    cursor: 'pointer',
+    transition: 'background 200ms ease',
+    flexShrink: 0,
+    outline: 'none',
+  };
+
+  const toggleThumb: CSSProperties = {
+    position: 'absolute',
+    top: 2,
+    left: optOut ? 2 : 16,
+    width: 14,
+    height: 14,
+    borderRadius: '50%',
+    background: 'white',
+    transition: 'left 180ms ease',
+    boxShadow: '0 1px 3px rgba(0,0,0,0.4)',
+  };
+
+  const clearBtnStyle: CSSProperties = {
+    padding: '5px 12px',
+    borderRadius: 7,
+    border: '1px solid rgba(255,255,255,0.10)',
+    background: 'rgba(255,255,255,0.05)',
+    color: cleared ? 'rgba(74,222,128,0.85)' : 'rgba(255,255,255,0.55)',
+    fontSize: 11,
+    fontWeight: 500,
+    cursor: clearing ? 'default' : 'pointer',
+    transition: 'color 180ms ease, background 180ms ease',
+    outline: 'none',
+    whiteSpace: 'nowrap' as const,
+    flexShrink: 0,
+  };
+
+  return (
+    <div className={className} style={panelStyle} role="region" aria-label="Ghost UI privacy controls">
+      {/* Header */}
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <LockIcon />
+        <span style={{ fontWeight: 600, color: 'rgba(255,255,255,0.80)', fontSize: 12 }}>
+          Privacy Controls
+        </span>
+      </div>
+
+      {/* Opt-out toggle */}
+      <div style={rowStyle}>
+        <div style={labelStyle}>
+          <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.70)' }}>
+            Disable learning
+          </span>
+          <span style={descStyle}>
+            {optOut
+              ? 'Ghost UI is paused — no events recorded.'
+              : 'Ghost UI adapts your layout based on local interactions.'}
+          </span>
+        </div>
+        <button
+          role="switch"
+          aria-checked={optOut}
+          aria-label="Disable Ghost UI learning"
+          onClick={() => setOptOut(!optOut)}
+          style={toggleTrack}
+        >
+          <span aria-hidden style={toggleThumb} />
+        </button>
+      </div>
+
+      {/* Clear data */}
+      <div style={rowStyle}>
+        <div style={labelStyle}>
+          <span style={{ fontWeight: 500, color: 'rgba(255,255,255,0.70)' }}>
+            Clear all data
+          </span>
+          <span style={descStyle}>
+            Erases interaction history and resets layout to default.
+          </span>
+        </div>
+        <button
+          onClick={handleClear}
+          disabled={clearing}
+          style={clearBtnStyle}
+          aria-label="Clear Ghost UI data"
+        >
+          {cleared ? '✓ Cleared' : clearing ? 'Clearing…' : 'Clear data'}
+        </button>
+      </div>
+
+      {/* Footer note */}
+      <p style={{ fontSize: 10.5, color: 'rgba(255,255,255,0.25)', lineHeight: 1.5, margin: 0 }}>
+        All data is stored locally in your browser. Nothing is sent to any server.
+      </p>
+    </div>
+  );
 }
