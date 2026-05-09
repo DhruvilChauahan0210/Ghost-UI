@@ -412,6 +412,18 @@ export function GhostCanvas({ zone: _zone, children, style, ...rest }: GhostCanv
 import { GhostMenu } from './menu.js';
 import { GhostTab } from './tabs.js';
 import { GhostCombobox } from './combobox.js';
+import { GhostAccordion } from './accordion.js';
+import { GhostSelect } from './select.js';
+import { GhostContextMenu } from './context-menu.js';
+import { GhostCommandPalette, GhostCommandPaletteProvider, useGhostCommandPalette } from './command-palette.js';
+import { GhostRadioGroup } from './radio-group.js';
+import { GhostCheckboxGroup } from './checkbox-group.js';
+import { GhostToolbar } from './toolbar.js';
+import { GhostBreadcrumb, GhostBreadcrumbItem } from './breadcrumb.js';
+import { GhostDataTable } from './data-table.js';
+import { GhostPopover } from './popover.js';
+
+export { GhostCommandPaletteProvider, useGhostCommandPalette };
 
 export const Ghost = {
   Slot: GhostSlot,
@@ -422,4 +434,15 @@ export const Ghost = {
   Menu: GhostMenu,
   Tab: GhostTab,
   Combobox: GhostCombobox,
+  Accordion: GhostAccordion,
+  Select: GhostSelect,
+  ContextMenu: GhostContextMenu,
+  CommandPalette: GhostCommandPalette,
+  RadioGroup: GhostRadioGroup,
+  CheckboxGroup: GhostCheckboxGroup,
+  Toolbar: GhostToolbar,
+  Breadcrumb: GhostBreadcrumb,
+  BreadcrumbItem: GhostBreadcrumbItem,
+  DataTable: GhostDataTable,
+  Popover: GhostPopover,
 };
