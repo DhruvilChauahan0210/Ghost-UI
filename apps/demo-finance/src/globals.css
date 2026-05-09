@@ -1,0 +1,59 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg:          #020409;
+  --color-surface:     #060c14;
+  --color-card:        #0a1020;
+  --color-fg:          #dce8f0;
+  --color-secondary:   #7a90a8;
+  --color-muted:       #3a4a5a;
+  --color-faint:       #111e2e;
+
+  --color-line:        rgba(255, 255, 255, 0.04);
+  --color-line-2:      rgba(255, 255, 255, 0.08);
+
+  --color-accent:      #3d7fff;
+  --color-accent-dim:  rgba(61, 127, 255, 0.12);
+  --color-accent-glow: rgba(61, 127, 255, 0.28);
+  --color-accent-text: #7aaaff;
+
+  --color-green:       #00d97e;
+  --color-red:         #ff3d5a;
+  --color-amber:       #ffb020;
+
+  --font-sans: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  --font-mono: 'IBM Plex Mono', ui-monospace, monospace;
+}
+
+:root { color-scheme: dark; }
+*, *::before, *::after { box-sizing: border-box; }
+html, body, #root { height: 100%; margin: 0; }
+
+body {
+  background: #020409;
+  color: #dce8f0;
+  font-family: 'IBM Plex Sans', ui-sans-serif, system-ui, sans-serif;
+  font-size: 13px;
+  line-height: 1.5;
+  -webkit-font-smoothing: antialiased;
+  overflow: hidden;
+}
+
+::selection { background: rgba(61, 127, 255, 0.35); color: #fff; }
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+@keyframes ticker-scroll {
+  from { transform: translateX(0); }
+  to   { transform: translateX(-50%); }
+}
+@keyframes pulse-green {
+  0%, 100% { opacity: 1; }
+  50%       { opacity: 0.4; }
+}

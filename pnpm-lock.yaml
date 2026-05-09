@@ -61,6 +61,43 @@ importers:
         specifier: ^6.0.5
         version: 6.4.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.32.0)
 
+  apps/demo-finance:
+    dependencies:
+      '@ghost-ui/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ghost-ui/react':
+        specifier: workspace:*
+        version: link:../../packages/react
+      react:
+        specifier: ^19.0.0
+        version: 19.2.6
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.6(react@19.2.6)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.2.4
+        version: 4.2.4(vite@6.4.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.32.0))
+      '@types/react':
+        specifier: ^19.0.2
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.2
+        version: 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.4
+        version: 4.7.0(vite@6.4.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.32.0))
+      tailwindcss:
+        specifier: ^4
+        version: 4.2.4
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.5
+        version: 6.4.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.32.0)
+
   apps/demo-saas:
     dependencies:
       '@ghost-ui/core':
@@ -75,6 +112,43 @@ importers:
       motion:
         specifier: ^11.15.0
         version: 11.18.2(react-dom@19.2.6(react@19.2.6))(react@19.2.6)
+      react:
+        specifier: ^19.0.0
+        version: 19.2.6
+      react-dom:
+        specifier: ^19.0.0
+        version: 19.2.6(react@19.2.6)
+    devDependencies:
+      '@tailwindcss/vite':
+        specifier: ^4.2.4
+        version: 4.2.4(vite@6.4.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.32.0))
+      '@types/react':
+        specifier: ^19.0.2
+        version: 19.2.14
+      '@types/react-dom':
+        specifier: ^19.0.2
+        version: 19.2.3(@types/react@19.2.14)
+      '@vitejs/plugin-react':
+        specifier: ^4.3.4
+        version: 4.7.0(vite@6.4.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.32.0))
+      tailwindcss:
+        specifier: ^4
+        version: 4.2.4
+      typescript:
+        specifier: ^5.6.3
+        version: 5.9.3
+      vite:
+        specifier: ^6.0.5
+        version: 6.4.2(@types/node@22.19.17)(jiti@2.7.0)(lightningcss@1.32.0)
+
+  apps/demo-studio:
+    dependencies:
+      '@ghost-ui/core':
+        specifier: workspace:*
+        version: link:../../packages/core
+      '@ghost-ui/react':
+        specifier: workspace:*
+        version: link:../../packages/react
       react:
         specifier: ^19.0.0
         version: 19.2.6
