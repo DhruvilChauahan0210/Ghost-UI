@@ -1,19 +1,21 @@
 @import "tailwindcss";
 
 @theme {
-  --color-bg:          #08080d;
-  --color-surface:     #0d0d14;
-  --color-card:        #111118;
-  --color-fg:          #dddde8;
-  --color-muted:       #6a6a82;
-  --color-faint:       #363648;
+  --color-bg:          #060609;
+  --color-surface:     #09090f;
+  --color-card:        #0e0e18;
+  --color-fg:          #e6e6f0;
+  --color-secondary:   #9898b2;
+  --color-muted:       #5a5a72;
+  --color-faint:       #2e2e42;
 
-  --color-line:        rgba(255, 255, 255, 0.048);
-  --color-line-2:      rgba(255, 255, 255, 0.088);
+  --color-line:        rgba(255, 255, 255, 0.05);
+  --color-line-2:      rgba(255, 255, 255, 0.09);
 
-  --color-accent:      #6366f1;
-  --color-accent-dim:  rgba(99, 102, 241, 0.14);
-  --color-accent-glow: rgba(99, 102, 241, 0.22);
+  --color-accent:      #5c5ef0;
+  --color-accent-dim:  rgba(92, 94, 240, 0.14);
+  --color-accent-glow: rgba(92, 94, 240, 0.28);
+  --color-accent-text: #8b8df8;
 
   --color-green:       #22c55e;
   --color-blue:        #3b82f6;
@@ -21,7 +23,7 @@
   --color-red:         #ef4444;
   --color-orange:      #f97316;
 
-  --font-sans: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  --font-sans: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   --font-mono: 'JetBrains Mono', ui-monospace, monospace;
 }
 
@@ -35,9 +37,9 @@ html, body, #root {
 }
 
 body {
-  background: #08080d;
-  color: #dddde8;
-  font-family: 'Manrope', ui-sans-serif, system-ui, sans-serif;
+  background: #060609;
+  color: #e6e6f0;
+  font-family: 'Plus Jakarta Sans', ui-sans-serif, system-ui, sans-serif;
   font-size: 13px;
   line-height: 1.5;
   -webkit-font-smoothing: antialiased;
@@ -45,7 +47,12 @@ body {
   overflow: hidden;
 }
 
-::selection { background: rgba(99, 102, 241, 0.32); color: #fff; }
+::selection { background: rgba(92, 94, 240, 0.35); color: #fff; }
+
+::-webkit-scrollbar { width: 4px; height: 4px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgba(255,255,255,0.08); border-radius: 2px; }
+::-webkit-scrollbar-thumb:hover { background: rgba(255,255,255,0.14); }
 
 @keyframes fade-in {
   from { opacity: 0; transform: translateY(4px); }
@@ -53,16 +60,21 @@ body {
 }
 
 @keyframes slide-in-right {
-  from { opacity: 0; transform: translateX(16px); }
+  from { opacity: 0; transform: translateX(20px); }
   to   { opacity: 1; transform: none; }
 }
 
 @keyframes ghost-flash {
-  0%   { background-color: rgba(99, 102, 241, 0.12); }
+  0%   { background-color: rgba(92, 94, 240, 0.12); }
   100% { background-color: transparent; }
 }
 
 @keyframes pulse-dot {
-  0%, 100% { opacity: 1; }
-  50%       { opacity: 0.35; }
+  0%, 100% { opacity: 1; transform: scale(1); }
+  50%       { opacity: 0.4; transform: scale(0.85); }
+}
+
+@keyframes orbit-spin {
+  from { transform: rotate(0deg); }
+  to   { transform: rotate(360deg); }
 }
