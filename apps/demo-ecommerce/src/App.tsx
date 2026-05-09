@@ -12,25 +12,25 @@ interface Product {
   category: string;
   badge?: 'New' | 'Sale' | 'Exclusive';
   sizes: string[];
-  art: string;
+  img: string;
   description: string;
   material: string;
   scarcity?: string;
 }
 
 const PRODUCTS: Product[] = [
-  { id: 'p01', name: 'Structured Blazer', designer: 'Maison Vell', price: 1240, category: 'Women', badge: 'New', sizes: ['XS','S','M','L'], art: 'radial-gradient(ellipse at 35% 25%, #3d1c6e 0%, #1a0b3d 45%, #0d0819 100%)', description: 'Precision-cut in Italian wool with sculptural shoulders and a single-button close.', material: 'Italian Wool, 98% / Elastane, 2%' },
-  { id: 'p02', name: 'Silk Slip Dress', designer: 'Atelier Mira', price: 890, category: 'Women', sizes: ['XS','S','M'], art: 'radial-gradient(ellipse at 60% 30%, #7c4a6e 0%, #4a1d44 40%, #1a0a18 100%)', description: 'Fluid 100% silk charmeuse with adjustable straps and a bias-cut hem.', material: 'Silk Charmeuse, 100%', scarcity: 'Only 3 left' },
-  { id: 'p03', name: 'Wide-Leg Trousers', designer: 'Studio Ko', price: 640, originalPrice: 980, category: 'Women', badge: 'Sale', sizes: ['XS','S','M','L','XL'], art: 'radial-gradient(ellipse at 40% 40%, #1e3a5f 0%, #0f2040 50%, #060d1a 100%)', description: 'High-waisted in a linen-cotton blend with pressed creases and side seam pockets.', material: 'Linen, 60% / Cotton, 40%' },
-  { id: 'p04', name: 'Cashmere Turtleneck', designer: 'Kessler & Co', price: 520, category: 'Men', badge: 'New', sizes: ['S','M','L','XL'], art: 'radial-gradient(ellipse at 50% 30%, #6b3a1c 0%, #3d1f0a 45%, #150a03 100%)', description: 'Grade A Mongolian cashmere in a relaxed-fit with ribbed cuffs and hem.', material: 'Grade A Cashmere, 100%' },
-  { id: 'p05', name: 'Tailored Overcoat', designer: 'Maison Vell', price: 2100, category: 'Men', sizes: ['S','M','L','XL'], art: 'radial-gradient(ellipse at 45% 25%, #1a3a1e 0%, #0c2010 48%, #050e07 100%)', description: 'Double-breasted wool-cashmere blend with notched lapels and half-canvas construction.', material: 'Wool, 80% / Cashmere, 20%', scarcity: 'Only 2 left' },
-  { id: 'p06', name: 'Vegetable-Tanned Tote', designer: 'Cordero', price: 1190, category: 'Accessories', badge: 'Exclusive', sizes: ['One Size'], art: 'radial-gradient(ellipse at 55% 35%, #7a5c1e 0%, #4a3510 45%, #1a1206 100%)', description: 'Full-grain vegetable-tanned leather that develops a rich patina over years of use.', material: 'Full-Grain Leather, Brass Hardware' },
-  { id: 'p07', name: 'Suede Chelsea Boots', designer: 'Atelier Mira', price: 760, originalPrice: 1100, category: 'Women', badge: 'Sale', sizes: ['36','37','38','39','40'], art: 'radial-gradient(ellipse at 40% 30%, #5c1a1a 0%, #35100a 48%, #140604 100%)', description: 'Nubuck suede upper with elasticated gussets and a stacked leather heel.', material: 'Nubuck Suede / Leather Sole' },
-  { id: 'p08', name: 'Belgian Linen Shirt', designer: 'Studio Ko', price: 310, category: 'Men', sizes: ['S','M','L','XL'], art: 'radial-gradient(ellipse at 35% 40%, #1a3550 0%, #0d1f30 48%, #050c15 100%)', description: 'Garment-washed Belgian linen with a mandarin collar and mother-of-pearl buttons.', material: 'Belgian Linen, 100%' },
-  { id: 'p09', name: 'Merino Wrap Coat', designer: 'Kessler & Co', price: 1650, category: 'Women', badge: 'New', sizes: ['XS','S','M','L'], art: 'radial-gradient(ellipse at 50% 25%, #5c2d0a 0%, #3a1a05 45%, #150a02 100%)', description: 'Lightweight merino with a self-tie belt and draped front panels. Weightless warmth.', material: 'Merino Wool, 100%' },
-  { id: 'p10', name: 'Calfskin Clutch', designer: 'Cordero', price: 590, category: 'Accessories', sizes: ['One Size'], art: 'radial-gradient(ellipse at 45% 35%, #1a4a3a 0%, #0d2820 48%, #050f0c 100%)', description: 'Buttery calfskin with a concealed clasp and suede lining. Fits an evening\'s essentials.', material: 'Calfskin Leather, Suede Interior' },
-  { id: 'p11', name: 'Accordion Pleated Skirt', designer: 'Atelier Mira', price: 480, category: 'Women', sizes: ['XS','S','M','L'], art: 'radial-gradient(ellipse at 55% 30%, #3a1f5c 0%, #21103a 48%, #0c0717 100%)', description: 'Silk-blend satin with fine accordion pleats and a concealed back zip.', material: 'Silk, 70% / Polyester, 30%', scarcity: 'Only 4 left' },
-  { id: 'p12', name: 'Selvedge Denim', designer: 'Studio Ko', price: 390, category: 'Men', sizes: ['28','30','32','34','36'], art: 'radial-gradient(ellipse at 40% 30%, #0f1e3a 0%, #081224 48%, #030710 100%)', description: 'Japanese selvedge in a slim-straight cut. Raw and unwashed — every pair ages uniquely.', material: 'Japanese Selvedge Denim, 100%' },
+  { id: 'p01', name: 'Structured Blazer', designer: 'Maison Vell', price: 1240, category: 'Women', badge: 'New', sizes: ['XS','S','M','L'], img: 'https://images.unsplash.com/photo-1592960362714-0e753879ace5?auto=format&fit=crop&w=600&q=80', description: 'Precision-cut in Italian wool with sculptural shoulders and a single-button close.', material: 'Italian Wool, 98% / Elastane, 2%' },
+  { id: 'p02', name: 'Silk Slip Dress', designer: 'Atelier Mira', price: 890, category: 'Women', sizes: ['XS','S','M'], img: 'https://images.unsplash.com/photo-1777894851675-c787ecde9acb?auto=format&fit=crop&w=600&q=80', description: 'Fluid 100% silk charmeuse with adjustable straps and a bias-cut hem.', material: 'Silk Charmeuse, 100%', scarcity: 'Only 3 left' },
+  { id: 'p03', name: 'Wide-Leg Trousers', designer: 'Studio Ko', price: 640, originalPrice: 980, category: 'Women', badge: 'Sale', sizes: ['XS','S','M','L','XL'], img: 'https://images.unsplash.com/photo-1772987311922-1f2a837bcf59?auto=format&fit=crop&w=600&q=80', description: 'High-waisted in a linen-cotton blend with pressed creases and side seam pockets.', material: 'Linen, 60% / Cotton, 40%' },
+  { id: 'p04', name: 'Cashmere Turtleneck', designer: 'Kessler & Co', price: 520, category: 'Men', badge: 'New', sizes: ['S','M','L','XL'], img: 'https://images.unsplash.com/photo-1630952588478-ee3231931243?auto=format&fit=crop&w=600&q=80', description: 'Grade A Mongolian cashmere in a relaxed-fit with ribbed cuffs and hem.', material: 'Grade A Cashmere, 100%' },
+  { id: 'p05', name: 'Tailored Overcoat', designer: 'Maison Vell', price: 2100, category: 'Men', sizes: ['S','M','L','XL'], img: 'https://images.unsplash.com/photo-1619603364937-8d7af41ef206?auto=format&fit=crop&w=600&q=80', description: 'Double-breasted wool-cashmere blend with notched lapels and half-canvas construction.', material: 'Wool, 80% / Cashmere, 20%', scarcity: 'Only 2 left' },
+  { id: 'p06', name: 'Vegetable-Tanned Tote', designer: 'Cordero', price: 1190, category: 'Accessories', badge: 'Exclusive', sizes: ['One Size'], img: 'https://images.unsplash.com/photo-1760624294504-211e763ee0fb?auto=format&fit=crop&w=600&q=80', description: 'Full-grain vegetable-tanned leather that develops a rich patina over years of use.', material: 'Full-Grain Leather, Brass Hardware' },
+  { id: 'p07', name: 'Suede Chelsea Boots', designer: 'Atelier Mira', price: 760, originalPrice: 1100, category: 'Women', badge: 'Sale', sizes: ['36','37','38','39','40'], img: 'https://images.unsplash.com/photo-1577387224391-5de31164a0e0?auto=format&fit=crop&w=600&q=80', description: 'Nubuck suede upper with elasticated gussets and a stacked leather heel.', material: 'Nubuck Suede / Leather Sole' },
+  { id: 'p08', name: 'Belgian Linen Shirt', designer: 'Studio Ko', price: 310, category: 'Men', sizes: ['S','M','L','XL'], img: 'https://images.unsplash.com/photo-1591357037205-166318b51afd?auto=format&fit=crop&w=600&q=80', description: 'Garment-washed Belgian linen with a mandarin collar and mother-of-pearl buttons.', material: 'Belgian Linen, 100%' },
+  { id: 'p09', name: 'Merino Wrap Coat', designer: 'Kessler & Co', price: 1650, category: 'Women', badge: 'New', sizes: ['XS','S','M','L'], img: 'https://images.unsplash.com/photo-1724709972210-4beb408de580?auto=format&fit=crop&w=600&q=80', description: 'Lightweight merino with a self-tie belt and draped front panels. Weightless warmth.', material: 'Merino Wool, 100%' },
+  { id: 'p10', name: 'Calfskin Clutch', designer: 'Cordero', price: 590, category: 'Accessories', sizes: ['One Size'], img: 'https://images.unsplash.com/photo-1749294435694-ce3c586591e6?auto=format&fit=crop&w=600&q=80', description: 'Buttery calfskin with a concealed clasp and suede lining. Fits an evening\'s essentials.', material: 'Calfskin Leather, Suede Interior' },
+  { id: 'p11', name: 'Accordion Pleated Skirt', designer: 'Atelier Mira', price: 480, category: 'Women', sizes: ['XS','S','M','L'], img: 'https://images.unsplash.com/photo-1600681103852-5f6df72461aa?auto=format&fit=crop&w=600&q=80', description: 'Silk-blend satin with fine accordion pleats and a concealed back zip.', material: 'Silk, 70% / Polyester, 30%', scarcity: 'Only 4 left' },
+  { id: 'p12', name: 'Selvedge Denim', designer: 'Studio Ko', price: 390, category: 'Men', sizes: ['28','30','32','34','36'], img: 'https://images.unsplash.com/photo-1592878849122-facb97520f9e?auto=format&fit=crop&w=600&q=80', description: 'Japanese selvedge in a slim-straight cut. Raw and unwashed — every pair ages uniquely.', material: 'Japanese Selvedge Denim, 100%' },
 ];
 
 const CATEGORIES = ['All', 'Women', 'Men', 'Accessories'];
@@ -233,8 +233,9 @@ function ProductCard({ product, inCart, inWishlist, onAction, index }: {
 }) {
   return (
     <div className="group flex flex-col" style={{ animationDelay: `${index * 35}ms`, animation: 'fade-up 0.5s ease both' }}>
-      <div className="relative aspect-[3/4] rounded-sm overflow-hidden mb-4" style={{ background: product.art }}>
-        <div className="absolute inset-0 bg-gradient-to-t from-black/40 via-transparent to-transparent" />
+      <div className="relative aspect-[3/4] rounded-sm overflow-hidden mb-4 bg-[#111110]">
+        <img src={product.img} alt={product.name} className="absolute inset-0 w-full h-full object-cover" loading="lazy" />
+        <div className="absolute inset-0 bg-gradient-to-t from-black/50 via-transparent to-transparent" />
 
         {product.badge && (
           <div className={[
@@ -352,8 +353,9 @@ function QuickViewModal({ product, onClose }: { product: Product; onClose: () =>
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center p-6 bg-black/75 backdrop-blur-md" onClick={onClose}>
       <div className="w-full max-w-[760px] bg-[#0d0d0a] rounded-sm border border-white/[0.08] overflow-hidden flex" onClick={e => e.stopPropagation()}>
-        <div className="w-[340px] flex-none aspect-[3/4]" style={{ background: product.art }}>
-          <div className="w-full h-full bg-gradient-to-t from-black/30 to-transparent" />
+        <div className="w-[340px] flex-none aspect-[3/4] relative bg-[#111110] overflow-hidden">
+          <img src={product.img} alt={product.name} className="absolute inset-0 w-full h-full object-cover" />
+          <div className="absolute inset-0 bg-gradient-to-t from-black/30 to-transparent" />
         </div>
         <div className="flex-1 p-10 flex flex-col">
           <button onClick={onClose} className="absolute top-5 right-5 h-7 w-7 flex items-center justify-center text-[#47443e] hover:text-[#88837a] transition-colors">
