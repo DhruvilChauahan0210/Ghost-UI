@@ -194,7 +194,7 @@ function ScreenshotPreview({ app, src, url }: { app: App; src: string; url: stri
 
   return (
     /* browser chrome */
-    <div className="overflow-hidden rounded-xl border border-white/[0.08] shadow-[0_40px_100px_-20px_rgba(0,0,0,0.65),0_0_0_1px_rgba(255,255,255,0.04)]">
+    <div className="overflow-hidden rounded-xl border border-white/[0.08]">
       {/* chrome bar */}
       <div className="flex items-center gap-1.5 border-b border-white/[0.07] px-4 py-[11px]"
            style={{ background: '#0d0d18' }}>
@@ -220,25 +220,13 @@ function ScreenshotPreview({ app, src, url }: { app: App; src: string; url: stri
         target="_blank"
         rel="noreferrer"
         className="group relative block cursor-pointer overflow-hidden"
-        style={{ height: 440 }}
         aria-label={`Open ${isOrbit ? 'Orbit' : 'Luxe'} live demo`}
       >
         <img
           src={src}
           alt={isOrbit ? 'Orbit issue tracker screenshot' : 'Luxe fashion store screenshot'}
-          className="w-full object-cover object-top transition-transform duration-700 ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:scale-[1.03]"
-          style={{ display: 'block', height: '100%' }}
+          className="w-full h-auto block transition-transform duration-700 ease-[cubic-bezier(0.2,0.7,0.2,1)] group-hover:scale-[1.03]"
           draggable={false}
-        />
-
-        {/* bottom fade — blends screenshot into card bg */}
-        <div
-          className="pointer-events-none absolute inset-x-0 bottom-0 h-28"
-          style={{
-            background: isOrbit
-              ? 'linear-gradient(to bottom, transparent, #07070a)'
-              : 'linear-gradient(to bottom, transparent, #09090f)',
-          }}
         />
 
         {/* hover CTA */}
