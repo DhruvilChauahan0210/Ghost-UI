@@ -1,7 +1,13 @@
-import { useState } from 'react';
+import { useState, useEffect, useRef } from 'react';
 import type { ReactNode } from 'react';
 import { GhostProvider, Ghost } from '@ghost-ui/react';
 import { localStorageAdapter } from '@ghost-ui/core';
+
+// ─── Types ────────────────────────────────────────────────────────────────────
+
+type NavId = 'portfolio' | 'markets' | 'trade' | 'history';
+type OrderSide = 'buy' | 'sell';
+type ToastMsg = { id: number; text: string; type: 'success' | 'info' | 'error' };
 
 // ─── Data ────────────────────────────────────────────────────────────────────
 
@@ -16,13 +22,21 @@ interface Position {
   sector: string;
 }
 
+interface WatchlistItem {
+  ticker: string;
+  name: string;
+  price: number;
+  change: number;
+  sparkline: number[];
+}
+
 interface Allocation {
   label: string;
   pct: number;
   color: string;
 }
 
-interface Transaction {
+interface ActivityTxn {
   type: 'BUY' | 'SELL' | 'DIV';
   ticker: string;
   amt: number;
@@ -36,14 +50,54 @@ interface TickerItem {
   up: boolean;
 }
 
+interface HistoryTxn {
+  id: number;
+  type: 'BUY' | 'SELL' | 'DIV';
+  ticker: string;
+  name: string;
+  shares: number;
+  price: number;
+  total: number;
+  date: string;
+  time: string;
+}
+
 const POSITIONS: Position[] = [
-  { ticker: 'NVDA', name: 'NVIDIA Corp',     price: 924.19,  change: +3.82, value: 18483, shares: 20,    sparkline: [780,800,810,790,830,870,910,924], sector: 'Tech'   },
-  { ticker: 'AAPL', name: 'Apple Inc',        price: 187.44,  change: -0.43, value: 12381, shares: 66,    sparkline: [195,192,188,190,186,189,187,187], sector: 'Tech'   },
-  { ticker: 'BTC',  name: 'Bitcoin',          price: 67221,   change: +5.14, value: 11227, shares: 0.167, sparkline: [58000,60000,63000,61000,65000,64000,68000,67221], sector: 'Crypto' },
-  { ticker: 'MSFT', name: 'Microsoft Corp',   price: 420.55,  change: +1.21, value: 8411,  shares: 20,    sparkline: [405,408,412,418,415,420,421,420], sector: 'Tech'   },
-  { ticker: 'VOO',  name: 'Vanguard S&P 500', price: 493.20,  change: +0.66, value: 7398,  shares: 15,    sparkline: [485,487,490,488,492,491,493,493], sector: 'ETF'    },
-  { ticker: 'ETH',  name: 'Ethereum',         price: 3582,    change: -1.88, value: 5015,  shares: 1.4,   sparkline: [3800,3700,3650,3600,3580,3550,3590,3582], sector: 'Crypto' },
+  { ticker: 'NVDA', name: 'NVIDIA Corp',      price: 924.19, change: +3.82, value: 18483, shares: 20,    sparkline: [780,800,810,790,830,870,910,924], sector: 'Tech'   },
+  { ticker: 'AAPL', name: 'Apple Inc',         price: 187.44, change: -0.43, value: 12381, shares: 66,    sparkline: [195,192,188,190,186,189,187,187], sector: 'Tech'   },
+  { ticker: 'BTC',  name: 'Bitcoin',           price: 67221,  change: +5.14, value: 11227, shares: 0.167, sparkline: [58000,60000,63000,61000,65000,64000,68000,67221], sector: 'Crypto' },
+  { ticker: 'MSFT', name: 'Microsoft Corp',    price: 420.55, change: +1.21, value: 8411,  shares: 20,    sparkline: [405,408,412,418,415,420,421,420], sector: 'Tech'   },
+  { ticker: 'VOO',  name: 'Vanguard S&P 500',  price: 493.20, change: +0.66, value: 7398,  shares: 15,    sparkline: [485,487,490,488,492,491,493,493], sector: 'ETF'    },
+  { ticker: 'ETH',  name: 'Ethereum',          price: 3582,   change: -1.88, value: 5015,  shares: 1.4,   sparkline: [3800,3700,3650,3600,3580,3550,3590,3582], sector: 'Crypto' },
 ];
+
+const WATCHLIST_BASE: WatchlistItem[] = [
+  { ticker: 'TSLA', name: 'Tesla Inc',       price: 175.22, change: +2.41, sparkline: [160,165,168,163,170,172,178,175] },
+  { ticker: 'AMZN', name: 'Amazon.com',      price: 185.33, change: -0.88, sparkline: [192,190,188,186,184,186,185,185] },
+  { ticker: 'GOOGL', name: 'Alphabet Inc',   price: 172.45, change: +1.12, sparkline: [165,167,170,168,172,171,174,172] },
+  { ticker: 'META', name: 'Meta Platforms',  price: 492.11, change: +3.55, sparkline: [460,468,475,470,480,485,490,492] },
+  { ticker: 'SOL',  name: 'Solana',          price: 145.88, change: -2.14, sparkline: [160,155,150,148,152,148,146,145] },
+  { ticker: 'AVGO', name: 'Broadcom Inc',    price: 1312.5, change: +1.82, sparkline: [1280,1285,1295,1290,1305,1308,1315,1312] },
+];
+
+const HISTORY_TXNS: HistoryTxn[] = [
+  { id: 1, type: 'BUY',  ticker: 'NVDA', name: 'NVIDIA Corp',    shares: 5,    price: 888.20,  total: 4441,  date: 'May 7, 2025',  time: '10:42 AM' },
+  { id: 2, type: 'SELL', ticker: 'ETH',  name: 'Ethereum',       shares: 0.25, price: 3568.00, total: 892,   date: 'May 4, 2025',  time: '3:15 PM'  },
+  { id: 3, type: 'BUY',  ticker: 'BTC',  name: 'Bitcoin',        shares: 0.032,price: 67187.5, total: 2149,  date: 'May 1, 2025',  time: '9:08 AM'  },
+  { id: 4, type: 'BUY',  ticker: 'MSFT', name: 'Microsoft Corp', shares: 2,    price: 420.00,  total: 840,   date: 'Apr 28, 2025', time: '11:30 AM' },
+  { id: 5, type: 'DIV',  ticker: 'VOO',  name: 'Vanguard S&P',   shares: 15,   price: 0,       total: 12.4,  date: 'Apr 25, 2025', time: '—'        },
+  { id: 6, type: 'BUY',  ticker: 'AAPL', name: 'Apple Inc',      shares: 10,   price: 182.50,  total: 1825,  date: 'Apr 20, 2025', time: '2:00 PM'  },
+  { id: 7, type: 'SELL', ticker: 'TSLA', name: 'Tesla Inc',      shares: 8,    price: 172.30,  total: 1378,  date: 'Apr 15, 2025', time: '1:20 PM'  },
+];
+
+const CHART_DATA: Record<string, number[]> = {
+  '1D':  [62100,62400,62200,62600,62800,62500,62700,62915],
+  '1W':  [60200,61000,60800,61500,62000,61800,62400,62915],
+  '1M':  [58000,59100,58700,60200,61000,60800,62100,62915],
+  '3M':  [54000,55400,56200,57800,58500,60000,61500,62915],
+  '1Y':  [52200,53100,55400,54200,57000,56300,59100,62915],
+  'ALL': [30000,38000,42000,48000,52000,55000,58000,62915],
+};
 
 const ALLOC: Allocation[] = [
   { label: 'Tech',   pct: 52, color: '#3d7fff' },
@@ -52,7 +106,7 @@ const ALLOC: Allocation[] = [
   { label: 'Cash',   pct:  8, color: '#ffb020' },
 ];
 
-const TXNS: Transaction[] = [
+const TXNS: ActivityTxn[] = [
   { type: 'BUY',  ticker: 'NVDA', amt: 4621,  time: '2h ago' },
   { type: 'DIV',  ticker: 'VOO',  amt:  12.4, time: '1d ago' },
   { type: 'SELL', ticker: 'ETH',  amt:  892,  time: '3d ago' },
@@ -69,7 +123,18 @@ const TICKER_ITEMS: TickerItem[] = [
   { sym: 'SPX',  px: '5,123',  chg: '+0.78%', up: true  },
 ];
 
-const CHART_PTS = [52200, 53100, 55400, 54200, 57000, 56300, 59100, 58700, 61200, 60800, 62915];
+const SECTOR_COLORS: Record<string, string> = {
+  Tech:   '#3d7fff',
+  Crypto: '#9d5fff',
+  ETF:    '#00d97e',
+  Cash:   '#ffb020',
+};
+
+const TXN_COLORS: Record<'BUY' | 'SELL' | 'DIV', { bg: string; text: string }> = {
+  BUY:  { bg: 'rgba(0,217,126,0.1)',  text: '#00d97e' },
+  SELL: { bg: 'rgba(255,61,90,0.1)',  text: '#ff3d5a' },
+  DIV:  { bg: 'rgba(255,176,32,0.1)', text: '#ffb020' },
+};
 
 // ─── Helpers ─────────────────────────────────────────────────────────────────
 
@@ -79,7 +144,6 @@ function sparkPath(pts: number[], w = 60, h = 22): string {
 }
 
 function fmtPrice(n: number): string {
-  if (n >= 1000) return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
   return n.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 });
 }
 
@@ -91,13 +155,6 @@ function fmtShares(n: number): string {
   if (n < 1) return n.toFixed(3);
   return n.toLocaleString('en-US');
 }
-
-const SECTOR_COLORS: Record<string, string> = {
-  Tech:   '#3d7fff',
-  Crypto: '#9d5fff',
-  ETF:    '#00d97e',
-  Cash:   '#ffb020',
-};
 
 // ─── SVG Icons ───────────────────────────────────────────────────────────────
 
@@ -207,6 +264,124 @@ function IcBell() {
   );
 }
 
+function IcChevronDown({ open }: { open: boolean }) {
+  return (
+    <svg
+      width="12" height="12" viewBox="0 0 12 12" fill="none"
+      style={{ transform: open ? 'rotate(180deg)' : 'rotate(0deg)', transition: 'transform 0.2s' }}
+    >
+      <path d="M2 4l4 4 4-4" stroke="currentColor" strokeWidth="1.4" strokeLinecap="round" strokeLinejoin="round"/>
+    </svg>
+  );
+}
+
+// ─── Toast System ─────────────────────────────────────────────────────────────
+
+function ToastContainer({ toasts }: { toasts: ToastMsg[] }) {
+  const toastBg: Record<ToastMsg['type'], string> = {
+    success: 'bg-green/10 border-green/20 text-green',
+    info:    'bg-accent-dim border-accent/20 text-accent-text',
+    error:   'bg-red/10 border-red/20 text-red',
+  };
+
+  return (
+    <div className="fixed top-4 right-4 z-50 flex flex-col gap-2 pointer-events-none">
+      {toasts.map(t => (
+        <div
+          key={t.id}
+          className={`px-4 py-3 rounded-lg border text-[13px] font-medium backdrop-blur-sm shadow-lg min-w-[220px] max-w-[320px] ${toastBg[t.type]}`}
+          style={{ animation: 'fade-in 0.2s ease-out both' }}
+        >
+          {t.text}
+        </div>
+      ))}
+    </div>
+  );
+}
+
+// ─── Transfer Modal ───────────────────────────────────────────────────────────
+
+interface TransferModalProps {
+  onClose: () => void;
+  onConfirm: (amount: string, account: string) => void;
+}
+
+function TransferModal({ onClose, onConfirm }: TransferModalProps) {
+  const [amount, setAmount] = useState('');
+  const [account, setAccount] = useState('bank4521');
+
+  return (
+    <div
+      className="fixed inset-0 z-40 flex items-center justify-center"
+      style={{ backdropFilter: 'blur(6px)', background: 'rgba(2,4,9,0.7)' }}
+      onClick={e => { if (e.target === e.currentTarget) onClose(); }}
+    >
+      <div
+        className="bg-surface border border-line-2 rounded-2xl p-6 w-full max-w-[360px] shadow-2xl"
+        style={{ animation: 'fade-in 0.18s ease-out both' }}
+      >
+        <div className="flex items-center justify-between mb-5">
+          <span className="text-[15px] font-semibold text-fg">Transfer Funds</span>
+          <button
+            onClick={onClose}
+            className="w-6 h-6 flex items-center justify-center rounded-full text-secondary hover:text-fg hover:bg-white/[0.06] transition-colors cursor-pointer text-[16px] leading-none"
+          >
+            ×
+          </button>
+        </div>
+
+        <div className="flex flex-col gap-4">
+          <div>
+            <label className="text-[11px] text-secondary font-medium mb-1.5 block uppercase tracking-wider">Amount</label>
+            <div className="flex items-center gap-2 bg-faint border border-line-2 rounded-lg px-3 py-2.5 focus-within:border-accent/40 transition-colors">
+              <span className="text-secondary text-[14px] font-mono">$</span>
+              <input
+                type="number"
+                value={amount}
+                onChange={e => setAmount(e.target.value)}
+                placeholder="0.00"
+                className="flex-1 bg-transparent text-fg font-mono text-[14px] outline-none placeholder:text-muted"
+              />
+            </div>
+          </div>
+
+          <div>
+            <label className="text-[11px] text-secondary font-medium mb-1.5 block uppercase tracking-wider">To Account</label>
+            <select
+              value={account}
+              onChange={e => setAccount(e.target.value)}
+              className="w-full bg-faint border border-line-2 rounded-lg px-3 py-2.5 text-[13px] text-fg outline-none focus:border-accent/40 transition-colors cursor-pointer appearance-none"
+            >
+              <option value="bank4521">Bank ···4521</option>
+              <option value="savings8832">Savings ···8832</option>
+              <option value="wallet">External Wallet</option>
+            </select>
+          </div>
+        </div>
+
+        <div className="flex gap-3 mt-6">
+          <button
+            onClick={onClose}
+            className="flex-1 py-2.5 rounded-lg border border-line-2 text-secondary text-[13px] font-medium hover:text-fg hover:border-line transition-colors cursor-pointer"
+          >
+            Cancel
+          </button>
+          <button
+            onClick={() => {
+              if (amount && parseFloat(amount) > 0) {
+                onConfirm(amount, account);
+              }
+            }}
+            className="flex-1 py-2.5 rounded-lg bg-accent text-white text-[13px] font-medium hover:bg-accent/90 transition-colors cursor-pointer"
+          >
+            Confirm Transfer
+          </button>
+        </div>
+      </div>
+    </div>
+  );
+}
+
 // ─── Donut Chart ─────────────────────────────────────────────────────────────
 
 function DonutChart({ data }: { data: Allocation[] }) {
@@ -217,21 +392,18 @@ function DonutChart({ data }: { data: Allocation[] }) {
   return (
     <svg viewBox="0 0 100 100" className="w-[90px] h-[90px] shrink-0">
       <circle cx={cx} cy={cy} r={r} fill="none" stroke="rgba(255,255,255,0.04)" strokeWidth={sw} />
-      {data.map((seg) => {
+      {data.map(seg => {
         const dash = (seg.pct / 100) * circ;
-        const strokeDasharray = `${dash} ${circ}`;
         const strokeDashoffset = -offset;
         offset += dash;
         return (
           <circle
             key={seg.label}
-            cx={cx}
-            cy={cy}
-            r={r}
+            cx={cx} cy={cy} r={r}
             fill="none"
             stroke={seg.color}
             strokeWidth={sw}
-            strokeDasharray={strokeDasharray}
+            strokeDasharray={`${dash} ${circ}`}
             strokeDashoffset={strokeDashoffset}
             strokeLinecap="butt"
             style={{ transform: 'rotate(-90deg)', transformOrigin: '50px 50px' }}
@@ -246,11 +418,11 @@ function DonutChart({ data }: { data: Allocation[] }) {
 
 // ─── Performance Chart ────────────────────────────────────────────────────────
 
-function PerformanceChart() {
+function PerformanceChart({ chartPts }: { chartPts: number[] }) {
   const w = 400, h = 80;
-  const lo = Math.min(...CHART_PTS), hi = Math.max(...CHART_PTS), rng = hi - lo;
-  const pts = CHART_PTS.map((v, i) => ({
-    x: (i / (CHART_PTS.length - 1)) * w,
+  const lo = Math.min(...chartPts), hi = Math.max(...chartPts), rng = hi - lo || 1;
+  const pts = chartPts.map((v, i) => ({
+    x: (i / (chartPts.length - 1)) * w,
     y: h - ((v - lo) / rng) * (h - 12) - 6,
   }));
 
@@ -292,7 +464,7 @@ function PerformanceChart() {
 
 function Sparkline({ pts, up }: { pts: number[]; up: boolean }) {
   return (
-    <svg viewBox={`0 0 60 22`} className="w-[60px] h-[22px]">
+    <svg viewBox="0 0 60 22" className="w-[60px] h-[22px]">
       <path
         d={sparkPath(pts)}
         fill="none"
@@ -307,7 +479,14 @@ function Sparkline({ pts, up }: { pts: number[]; up: boolean }) {
 
 // ─── Sidebar ─────────────────────────────────────────────────────────────────
 
-type NavId = 'portfolio' | 'markets' | 'trade' | 'history';
+function navCls(active: boolean) {
+  return [
+    'flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium w-full text-left transition-colors cursor-pointer',
+    active
+      ? 'bg-accent-dim text-accent-text border border-accent/20'
+      : 'text-secondary hover:text-fg hover:bg-white/[0.04] border border-transparent',
+  ].join(' ');
+}
 
 interface SidebarProps {
   active: NavId;
@@ -315,16 +494,8 @@ interface SidebarProps {
 }
 
 function Sidebar({ active, onNav }: SidebarProps) {
-  const navItems: { id: NavId; label: string; Icon: () => ReactNode; liveDot?: boolean }[] = [
-    { id: 'portfolio', label: 'Portfolio', Icon: IcPortfolio },
-    { id: 'markets',   label: 'Markets',   Icon: IcMarkets, liveDot: true },
-    { id: 'trade',     label: 'Trade',     Icon: IcTrade },
-    { id: 'history',   label: 'History',   Icon: IcHistory },
-  ];
-
   return (
     <aside className="w-[220px] shrink-0 flex flex-col bg-surface border-r border-line h-full">
-      {/* Logo */}
       <div className="flex items-center gap-3 px-5 py-[18px] border-b border-line">
         <svg width="28" height="28" viewBox="0 0 28 28" fill="none">
           <defs>
@@ -346,35 +517,31 @@ function Sidebar({ active, onNav }: SidebarProps) {
         <span className="ml-auto text-[10px] font-medium px-[6px] py-[2px] rounded bg-green/10 text-green border border-green/20 leading-none">Pro</span>
       </div>
 
-      {/* Nav */}
       <nav className="flex-1 p-3 flex flex-col gap-0.5">
-        {navItems.map(({ id, label, Icon, liveDot }) => {
-          const isActive = active === id;
-          return (
-            <button
-              key={id}
-              onClick={() => onNav(id)}
-              className={[
-                'flex items-center gap-2.5 px-3 py-2 rounded-md text-[13px] font-medium w-full text-left transition-colors cursor-pointer',
-                isActive
-                  ? 'bg-accent-dim text-accent-text border border-accent/20'
-                  : 'text-secondary hover:text-fg hover:bg-white/[0.04]',
-              ].join(' ')}
-            >
-              <Icon />
-              <span>{label}</span>
-              {liveDot && (
-                <span
-                  className="ml-auto w-[6px] h-[6px] rounded-full bg-green"
-                  style={{ animation: 'pulse-green 2s ease-in-out infinite' }}
-                />
-              )}
-            </button>
-          );
-        })}
+        <Ghost.Slot zone="apex.nav" className="flex flex-col gap-0.5">
+          <Ghost.Button id="portfolio" zone="apex.nav" onClick={() => onNav('portfolio')} className={navCls(active === 'portfolio')}>
+            <IcPortfolio />
+            <span>Portfolio</span>
+          </Ghost.Button>
+          <Ghost.Button id="markets" zone="apex.nav" onClick={() => onNav('markets')} className={navCls(active === 'markets')}>
+            <IcMarkets />
+            <span>Markets</span>
+            <span
+              className="ml-auto w-[6px] h-[6px] rounded-full bg-green"
+              style={{ animation: 'pulse-green 2s ease-in-out infinite' }}
+            />
+          </Ghost.Button>
+          <Ghost.Button id="trade" zone="apex.nav" onClick={() => onNav('trade')} className={navCls(active === 'trade')}>
+            <IcTrade />
+            <span>Trade</span>
+          </Ghost.Button>
+          <Ghost.Button id="history" zone="apex.nav" onClick={() => onNav('history')} className={navCls(active === 'history')}>
+            <IcHistory />
+            <span>History</span>
+          </Ghost.Button>
+        </Ghost.Slot>
       </nav>
 
-      {/* Bottom */}
       <div className="border-t border-line p-3 flex flex-col gap-2">
         <button className="flex items-center gap-2 px-3 py-2 rounded-md text-secondary hover:text-fg hover:bg-white/[0.04] transition-colors text-[13px] w-full cursor-pointer">
           <IcSettings />
@@ -395,17 +562,15 @@ function Sidebar({ active, onNav }: SidebarProps) {
   );
 }
 
-// ─── Topbar / Ticker ─────────────────────────────────────────────────────────
+// ─── Topbar ───────────────────────────────────────────────────────────────────
 
 function Topbar() {
   const doubled = [...TICKER_ITEMS, ...TICKER_ITEMS];
-
   return (
     <header className="flex items-center h-9 border-b border-line bg-surface shrink-0 overflow-hidden">
-      {/* Ticker */}
       <div className="flex-1 overflow-hidden relative">
         <div
-          className="flex items-center gap-0 whitespace-nowrap"
+          className="flex items-center whitespace-nowrap"
           style={{ animation: 'ticker-scroll 28s linear infinite' }}
         >
           {doubled.map((t, i) => (
@@ -418,8 +583,6 @@ function Topbar() {
           ))}
         </div>
       </div>
-
-      {/* Right controls */}
       <div className="flex items-center gap-1 pr-4 pl-2 shrink-0 border-l border-line h-full">
         <button className="flex items-center gap-1.5 px-2.5 py-1.5 rounded text-secondary hover:text-fg hover:bg-white/[0.05] transition-colors text-[11px] cursor-pointer">
           <IcSearch />
@@ -434,248 +597,588 @@ function Topbar() {
   );
 }
 
-// ─── Balance Header ───────────────────────────────────────────────────────────
+// ─── Portfolio View ───────────────────────────────────────────────────────────
 
-function BalanceHeader({ range, onRange }: { range: string; onRange: (r: string) => void }) {
-  const ranges = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
-  return (
-    <div className="flex items-end justify-between">
-      <div>
-        <div className="text-[11px] font-mono text-secondary uppercase tracking-widest mb-1">Total Portfolio</div>
-        <div className="text-[32px] font-semibold text-fg leading-none font-mono tracking-tight">$62,915.00</div>
-        <div className="flex items-center gap-3 mt-2">
-          <span className="text-[12px] font-mono text-green">+$842.55 today</span>
-          <span className="text-[11px] font-mono text-secondary">+18.4% all time</span>
-        </div>
-      </div>
-      <div className="flex items-center gap-0.5 bg-faint rounded-md p-0.5 border border-line">
-        {ranges.map(r => (
-          <button
-            key={r}
-            onClick={() => onRange(r)}
-            className={[
-              'px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer',
-              range === r
-                ? 'bg-accent text-white'
-                : 'text-secondary hover:text-fg',
-            ].join(' ')}
-          >
-            {r}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
+interface PortfolioViewProps {
+  onAction: (action: string) => void;
 }
 
-// ─── Quick Actions ────────────────────────────────────────────────────────────
+function PortfolioView({ onAction }: PortfolioViewProps) {
+  const [range, setRange] = useState('1Y');
+  const [selectedTicker, setSelectedTicker] = useState<string | null>(null);
+  const ranges = ['1D', '1W', '1M', '3M', '1Y', 'ALL'];
+  const chartPts = CHART_DATA[range] ?? CHART_DATA['1Y']!;
 
-function QuickActions() {
   const btnCls = 'flex flex-col items-center gap-1.5 px-4 py-3 rounded-lg border border-line-2 bg-card hover:border-accent/30 hover:bg-accent-dim transition-colors cursor-pointer group min-w-[80px]';
   const iconCls = 'text-accent';
   const labelCls = 'text-[11px] text-secondary group-hover:text-fg transition-colors font-medium';
 
   return (
-    <div>
-      <div className="text-[10px] font-mono text-secondary/60 mb-2 flex items-center gap-1.5">
-        <span className="text-accent">⚡</span>
-        Ghost AI — actions reorder as you use them
-      </div>
-      <Ghost.Slot zone="apex.actions" className="flex gap-2 flex-wrap">
-        <Ghost.Button id="transfer" zone="apex.actions" className={btnCls}>
-          <span className={iconCls}><IcTransfer /></span>
-          <span className={labelCls}>Transfer</span>
-        </Ghost.Button>
-        <Ghost.Button id="invest" zone="apex.actions" className={btnCls}>
-          <span className={iconCls}><IcInvest /></span>
-          <span className={labelCls}>Invest</span>
-        </Ghost.Button>
-        <Ghost.Button id="deposit" zone="apex.actions" className={btnCls}>
-          <span className={iconCls}><IcDeposit /></span>
-          <span className={labelCls}>Deposit</span>
-        </Ghost.Button>
-        <Ghost.Button id="withdraw" zone="apex.actions" className={btnCls}>
-          <span className={iconCls}><IcWithdraw /></span>
-          <span className={labelCls}>Withdraw</span>
-        </Ghost.Button>
-        <Ghost.Button id="statement" zone="apex.actions" className={btnCls}>
-          <span className={iconCls}><IcStatement /></span>
-          <span className={labelCls}>Statement</span>
-        </Ghost.Button>
-      </Ghost.Slot>
-    </div>
-  );
-}
-
-// ─── Positions Table ──────────────────────────────────────────────────────────
-
-function PositionsTable() {
-  return (
-    <div className="bg-card rounded-xl border border-line overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-line">
-        <span className="text-[13px] font-semibold text-fg">Positions</span>
-        <button className="text-[11px] text-accent-text hover:text-accent transition-colors cursor-pointer">See all</button>
-      </div>
-      <table className="w-full">
-        <thead>
-          <tr className="border-b border-line">
-            {['Asset', 'Price', 'Value', '7D', 'Holdings'].map(h => (
-              <th key={h} className="px-4 py-2.5 text-left text-[10px] font-medium text-secondary uppercase tracking-wider first:pl-4">
-                {h}
-              </th>
-            ))}
-          </tr>
-        </thead>
-        <tbody>
-          {POSITIONS.map((pos, i) => (
-            <tr
-              key={pos.ticker}
-              className={[
-                'border-b border-line last:border-0 hover:bg-white/[0.02] transition-colors',
-                i % 2 === 0 ? '' : '',
-              ].join(' ')}
-            >
-              {/* Asset */}
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-2.5">
-                  <span
-                    className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded"
-                    style={{
-                      color: SECTOR_COLORS[pos.sector] ?? '#7a90a8',
-                      background: `${SECTOR_COLORS[pos.sector] ?? '#7a90a8'}1a`,
-                    }}
-                  >
-                    {pos.ticker}
-                  </span>
-                  <span className="text-[12px] text-secondary truncate max-w-[120px]">{pos.name}</span>
-                </div>
-              </td>
-              {/* Price */}
-              <td className="px-4 py-3">
-                <span className="font-mono text-[12px] text-fg tabular-nums">${fmtPrice(pos.price)}</span>
-              </td>
-              {/* Value */}
-              <td className="px-4 py-3">
-                <span className="font-mono text-[12px] text-fg tabular-nums">{fmtValue(pos.value)}</span>
-              </td>
-              {/* 7D */}
-              <td className="px-4 py-3">
-                <div className="flex items-center gap-2">
-                  <Sparkline pts={pos.sparkline} up={pos.change >= 0} />
-                  <span className={`font-mono text-[11px] tabular-nums ${pos.change >= 0 ? 'text-green' : 'text-red'}`}>
-                    {pos.change >= 0 ? '+' : ''}{pos.change.toFixed(2)}%
-                  </span>
-                </div>
-              </td>
-              {/* Holdings */}
-              <td className="px-4 py-3">
-                <span className="font-mono text-[12px] text-secondary tabular-nums">{fmtShares(pos.shares)} {pos.ticker}</span>
-              </td>
-            </tr>
-          ))}
-        </tbody>
-      </table>
-    </div>
-  );
-}
-
-// ─── Allocation Card ──────────────────────────────────────────────────────────
-
-function AllocationCard() {
-  return (
-    <div className="bg-card rounded-xl border border-line p-4">
-      <div className="text-[13px] font-semibold text-fg mb-4">Allocation</div>
-      <div className="flex items-center gap-4 mb-4">
-        <DonutChart data={ALLOC} />
-        <div className="flex flex-col gap-2 min-w-0">
-          {ALLOC.map(seg => (
-            <div key={seg.label} className="flex items-center gap-2">
-              <span className="w-2 h-2 rounded-full shrink-0" style={{ background: seg.color }} />
-              <span className="text-[11px] text-secondary truncate">{seg.label}</span>
-              <span className="font-mono text-[11px] text-fg ml-auto pl-2 tabular-nums">{seg.pct}%</span>
-            </div>
-          ))}
-        </div>
-      </div>
-    </div>
-  );
-}
-
-// ─── Activity / Transactions Card ────────────────────────────────────────────
-
-const TXN_COLORS: Record<Transaction['type'], { bg: string; text: string }> = {
-  BUY:  { bg: 'rgba(0,217,126,0.1)',  text: '#00d97e' },
-  SELL: { bg: 'rgba(255,61,90,0.1)',  text: '#ff3d5a' },
-  DIV:  { bg: 'rgba(255,176,32,0.1)', text: '#ffb020' },
-};
-
-function ActivityCard() {
-  return (
-    <div className="bg-card rounded-xl border border-line overflow-hidden">
-      <div className="flex items-center justify-between px-4 py-3 border-b border-line">
-        <span className="text-[13px] font-semibold text-fg">Activity</span>
-        <button className="text-[11px] text-accent-text hover:text-accent transition-colors cursor-pointer">All</button>
-      </div>
-      <div className="divide-y divide-line">
-        {TXNS.map((txn, i) => {
-          const cfg = TXN_COLORS[txn.type];
-          const sign = txn.type === 'SELL' ? '-' : '+';
-          return (
-            <div key={i} className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
-              <span
-                className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded shrink-0"
-                style={{ background: cfg.bg, color: cfg.text }}
-              >
-                {txn.type}
-              </span>
-              <div className="min-w-0 flex-1">
-                <div className="text-[12px] font-medium text-fg">{txn.ticker}</div>
-                <div className="text-[10px] text-secondary">{txn.time}</div>
-              </div>
-              <span
-                className="font-mono text-[12px] tabular-nums shrink-0"
-                style={{ color: cfg.text }}
-              >
-                {sign}${txn.amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
-              </span>
-            </div>
-          );
-        })}
-      </div>
-    </div>
-  );
-}
-
-// ─── Main Portfolio View ──────────────────────────────────────────────────────
-
-function PortfolioView() {
-  const [range, setRange] = useState('1Y');
-
-  return (
     <div className="flex-1 grid grid-cols-[1fr_280px] overflow-hidden">
-      {/* Left column */}
       <div className="overflow-y-auto p-6 flex flex-col gap-5 border-r border-line">
-        <BalanceHeader range={range} onRange={setRange} />
-        <QuickActions />
+        {/* Balance header */}
+        <div className="flex items-end justify-between">
+          <div>
+            <div className="text-[11px] font-mono text-secondary uppercase tracking-widest mb-1">Total Portfolio</div>
+            <div className="text-[32px] font-semibold text-fg leading-none font-mono tracking-tight">$62,915.00</div>
+            <div className="flex items-center gap-3 mt-2">
+              <span className="text-[12px] font-mono text-green">+$842.55 today</span>
+              <span className="text-[11px] font-mono text-secondary">+18.4% all time</span>
+            </div>
+          </div>
+          <div className="flex items-center gap-0.5 bg-faint rounded-md p-0.5 border border-line">
+            {ranges.map(r => (
+              <button
+                key={r}
+                onClick={() => setRange(r)}
+                className={[
+                  'px-2.5 py-1 rounded text-[11px] font-mono transition-colors cursor-pointer',
+                  range === r ? 'bg-accent text-white' : 'text-secondary hover:text-fg',
+                ].join(' ')}
+              >
+                {r}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Quick actions */}
+        <div>
+          <div className="text-[10px] font-mono text-secondary/60 mb-2 flex items-center gap-1.5">
+            <span className="text-accent">⚡</span>
+            Ghost AI — actions reorder as you use them
+          </div>
+          <Ghost.Slot zone="apex.actions" className="flex gap-2 flex-wrap">
+            <Ghost.Button id="transfer" zone="apex.actions" onClick={() => onAction('transfer')} className={btnCls}>
+              <span className={iconCls}><IcTransfer /></span>
+              <span className={labelCls}>Transfer</span>
+            </Ghost.Button>
+            <Ghost.Button id="invest" zone="apex.actions" onClick={() => onAction('invest')} className={btnCls}>
+              <span className={iconCls}><IcInvest /></span>
+              <span className={labelCls}>Invest</span>
+            </Ghost.Button>
+            <Ghost.Button id="deposit" zone="apex.actions" onClick={() => onAction('deposit')} className={btnCls}>
+              <span className={iconCls}><IcDeposit /></span>
+              <span className={labelCls}>Deposit</span>
+            </Ghost.Button>
+            <Ghost.Button id="withdraw" zone="apex.actions" onClick={() => onAction('withdraw')} className={btnCls}>
+              <span className={iconCls}><IcWithdraw /></span>
+              <span className={labelCls}>Withdraw</span>
+            </Ghost.Button>
+            <Ghost.Button id="statement" zone="apex.actions" onClick={() => onAction('statement')} className={btnCls}>
+              <span className={iconCls}><IcStatement /></span>
+              <span className={labelCls}>Statement</span>
+            </Ghost.Button>
+          </Ghost.Slot>
+        </div>
+
         {/* Chart card */}
         <div className="bg-card rounded-xl border border-line p-4">
           <div className="flex items-center justify-between mb-3">
             <span className="text-[12px] font-medium text-secondary">Performance</span>
             <span className="text-[11px] font-mono text-green">+18.4%</span>
           </div>
-          <PerformanceChart />
+          <PerformanceChart chartPts={chartPts} />
           <div className="flex items-center justify-between mt-2">
-            <span className="text-[10px] font-mono text-secondary">Jan 2024</span>
+            <span className="text-[10px] font-mono text-secondary">
+              {range === '1D' ? 'Today' : range === '1W' ? '7 days ago' : range === '1M' ? '1 month ago' : range === '3M' ? '3 months ago' : range === '1Y' ? 'Jan 2024' : '2020'}
+            </span>
             <span className="text-[10px] font-mono text-secondary">May 2025</span>
           </div>
         </div>
-        <PositionsTable />
+
+        {/* Positions table */}
+        <div className="bg-card rounded-xl border border-line overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-line">
+            <span className="text-[13px] font-semibold text-fg">Positions</span>
+            <button className="text-[11px] text-accent-text hover:text-accent transition-colors cursor-pointer">See all</button>
+          </div>
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-line">
+                {['Asset', 'Price', 'Value', '7D', 'Holdings'].map(h => (
+                  <th key={h} className="px-4 py-2.5 text-left text-[10px] font-medium text-secondary uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {POSITIONS.map(pos => {
+                const isExpanded = selectedTicker === pos.ticker;
+                const avgCost = pos.value / pos.shares;
+                const pnl = (pos.price - avgCost) * pos.shares;
+                const pnlPct = ((pos.price - avgCost) / avgCost) * 100;
+                return (
+                  <>
+                    <tr
+                      key={pos.ticker}
+                      onClick={() => setSelectedTicker(isExpanded ? null : pos.ticker)}
+                      className="border-b border-line last:border-0 hover:bg-white/[0.02] transition-colors cursor-pointer"
+                    >
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2.5">
+                          <span
+                            className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded"
+                            style={{
+                              color: SECTOR_COLORS[pos.sector] ?? '#7a90a8',
+                              background: `${SECTOR_COLORS[pos.sector] ?? '#7a90a8'}1a`,
+                            }}
+                          >
+                            {pos.ticker}
+                          </span>
+                          <span className="text-[12px] text-secondary truncate max-w-[120px]">{pos.name}</span>
+                          <IcChevronDown open={isExpanded} />
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-[12px] text-fg tabular-nums">${fmtPrice(pos.price)}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-[12px] text-fg tabular-nums">{fmtValue(pos.value)}</span>
+                      </td>
+                      <td className="px-4 py-3">
+                        <div className="flex items-center gap-2">
+                          <Sparkline pts={pos.sparkline} up={pos.change >= 0} />
+                          <span className={`font-mono text-[11px] tabular-nums ${pos.change >= 0 ? 'text-green' : 'text-red'}`}>
+                            {pos.change >= 0 ? '+' : ''}{pos.change.toFixed(2)}%
+                          </span>
+                        </div>
+                      </td>
+                      <td className="px-4 py-3">
+                        <span className="font-mono text-[12px] text-secondary tabular-nums">{fmtShares(pos.shares)} {pos.ticker}</span>
+                      </td>
+                    </tr>
+                    {isExpanded && (
+                      <tr key={`${pos.ticker}-detail`} className="border-b border-line bg-faint/60">
+                        <td colSpan={5} className="px-4 py-3">
+                          <div className="flex items-center gap-8 text-[11px]">
+                            <div>
+                              <span className="text-secondary block mb-0.5">Avg Cost Basis</span>
+                              <span className="font-mono text-fg">${fmtPrice(avgCost)}</span>
+                            </div>
+                            <div>
+                              <span className="text-secondary block mb-0.5">Market Value</span>
+                              <span className="font-mono text-fg">{fmtValue(pos.value)}</span>
+                            </div>
+                            <div>
+                              <span className="text-secondary block mb-0.5">Total P&amp;L</span>
+                              <span className={`font-mono font-medium ${pnl >= 0 ? 'text-green' : 'text-red'}`}>
+                                {pnl >= 0 ? '+' : ''}{fmtValue(Math.round(pnl))} ({pnlPct >= 0 ? '+' : ''}{pnlPct.toFixed(2)}%)
+                              </span>
+                            </div>
+                          </div>
+                        </td>
+                      </tr>
+                    )}
+                  </>
+                );
+              })}
+            </tbody>
+          </table>
+        </div>
       </div>
 
       {/* Right column */}
       <div className="overflow-y-auto p-5 flex flex-col gap-5">
-        <AllocationCard />
-        <ActivityCard />
+        {/* Allocation */}
+        <div className="bg-card rounded-xl border border-line p-4">
+          <div className="text-[13px] font-semibold text-fg mb-4">Allocation</div>
+          <div className="flex items-center gap-4 mb-4">
+            <DonutChart data={ALLOC} />
+            <div className="flex flex-col gap-2 min-w-0">
+              {ALLOC.map(seg => (
+                <div key={seg.label} className="flex items-center gap-2">
+                  <span className="w-2 h-2 rounded-full shrink-0" style={{ background: seg.color }} />
+                  <span className="text-[11px] text-secondary truncate">{seg.label}</span>
+                  <span className="font-mono text-[11px] text-fg ml-auto pl-2 tabular-nums">{seg.pct}%</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </div>
+
+        {/* Activity */}
+        <div className="bg-card rounded-xl border border-line overflow-hidden">
+          <div className="flex items-center justify-between px-4 py-3 border-b border-line">
+            <span className="text-[13px] font-semibold text-fg">Activity</span>
+            <button className="text-[11px] text-accent-text hover:text-accent transition-colors cursor-pointer">All</button>
+          </div>
+          <div className="divide-y divide-line">
+            {TXNS.map((txn, i) => {
+              const cfg = TXN_COLORS[txn.type];
+              const sign = txn.type === 'SELL' ? '-' : '+';
+              return (
+                <div key={i} className="flex items-center gap-3 px-4 py-3 hover:bg-white/[0.02] transition-colors">
+                  <span
+                    className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded shrink-0"
+                    style={{ background: cfg.bg, color: cfg.text }}
+                  >
+                    {txn.type}
+                  </span>
+                  <div className="min-w-0 flex-1">
+                    <div className="text-[12px] font-medium text-fg">{txn.ticker}</div>
+                    <div className="text-[10px] text-secondary">{txn.time}</div>
+                  </div>
+                  <span className="font-mono text-[12px] tabular-nums shrink-0" style={{ color: cfg.text }}>
+                    {sign}${txn.amt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                  </span>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      </div>
+    </div>
+  );
+}
+
+// ─── Markets View ─────────────────────────────────────────────────────────────
+
+interface MarketsViewProps {
+  onToast: (text: string, type?: ToastMsg['type']) => void;
+}
+
+function MarketsView({ onToast }: MarketsViewProps) {
+  const [prices, setPrices] = useState<WatchlistItem[]>(WATCHLIST_BASE);
+
+  useEffect(() => {
+    const interval = setInterval(() => {
+      setPrices(prev => prev.map(item => {
+        const noise = 1 + (Math.random() - 0.5) * 0.006;
+        const newPrice = item.price * noise;
+        return { ...item, price: parseFloat(newPrice.toFixed(2)) };
+      }));
+    }, 2500);
+    return () => clearInterval(interval);
+  }, []);
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-[18px] font-semibold text-fg">Markets</h2>
+          <p className="text-[12px] text-secondary mt-0.5">Live prices · updates every 2.5s</p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="w-[6px] h-[6px] rounded-full bg-green" style={{ animation: 'pulse-green 2s ease-in-out infinite' }} />
+          <span className="text-[11px] font-mono text-green">LIVE</span>
+        </div>
+      </div>
+
+      <div className="bg-card rounded-xl border border-line overflow-hidden">
+        <table className="w-full">
+          <thead>
+            <tr className="border-b border-line">
+              {['Asset', 'Price', 'Change', '7D Chart', 'Actions'].map(h => (
+                <th key={h} className="px-4 py-3 text-left text-[10px] font-medium text-secondary uppercase tracking-wider">{h}</th>
+              ))}
+            </tr>
+          </thead>
+          <tbody>
+            {prices.map(item => (
+              <tr key={item.ticker} className="border-b border-line last:border-0 hover:bg-white/[0.02] transition-colors">
+                <td className="px-4 py-3.5">
+                  <div className="flex items-center gap-2.5">
+                    <span className="text-[11px] font-mono font-semibold px-1.5 py-0.5 rounded bg-accent-dim text-accent-text">{item.ticker}</span>
+                    <span className="text-[12px] text-secondary">{item.name}</span>
+                  </div>
+                </td>
+                <td className="px-4 py-3.5">
+                  <span className="font-mono text-[13px] text-fg tabular-nums">${fmtPrice(item.price)}</span>
+                </td>
+                <td className="px-4 py-3.5">
+                  <span className={`font-mono text-[12px] tabular-nums ${item.change >= 0 ? 'text-green' : 'text-red'}`}>
+                    {item.change >= 0 ? '+' : ''}{item.change.toFixed(2)}%
+                  </span>
+                </td>
+                <td className="px-4 py-3.5">
+                  <Sparkline pts={item.sparkline} up={item.change >= 0} />
+                </td>
+                <td className="px-4 py-3.5">
+                  <div className="flex items-center gap-2">
+                    <button
+                      onClick={() => onToast(`Buy order placed for ${item.ticker}`, 'success')}
+                      className="px-3 py-1.5 rounded-md bg-green/10 text-green text-[11px] font-medium border border-green/20 hover:bg-green/20 transition-colors cursor-pointer"
+                    >
+                      Buy
+                    </button>
+                    <button
+                      onClick={() => onToast(`Price alert set for ${item.ticker}`, 'info')}
+                      className="px-3 py-1.5 rounded-md bg-faint text-secondary text-[11px] font-medium border border-line-2 hover:text-fg hover:border-line transition-colors cursor-pointer"
+                    >
+                      Alert
+                    </button>
+                  </div>
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </div>
+  );
+}
+
+// ─── Trade View ───────────────────────────────────────────────────────────────
+
+interface TradeViewProps {
+  onToast: (text: string, type?: ToastMsg['type']) => void;
+}
+
+function TradeView({ onToast }: TradeViewProps) {
+  const [side, setSide] = useState<OrderSide>('buy');
+  const [ticker, setTicker] = useState('NVDA');
+  const [orderType, setOrderType] = useState<'market' | 'limit'>('market');
+  const [amount, setAmount] = useState('');
+  const [limitPrice, setLimitPrice] = useState('');
+
+  const selectedPos = POSITIONS.find(p => p.ticker === ticker)!;
+  const usdAmt = parseFloat(amount) || 0;
+  const estShares = usdAmt > 0 && selectedPos ? usdAmt / selectedPos.price : 0;
+
+  const handleSubmit = () => {
+    if (!usdAmt || usdAmt <= 0) {
+      onToast('Enter a valid amount', 'error');
+      return;
+    }
+    const verb = side === 'buy' ? 'Bought' : 'Sold';
+    const sharesStr = estShares < 0.01 ? estShares.toFixed(6) : estShares.toFixed(4);
+    onToast(`${verb} ${sharesStr} ${ticker} for $${usdAmt.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}`, 'success');
+    setAmount('');
+    setLimitPrice('');
+  };
+
+  const sideBtnCls = (s: OrderSide) => [
+    'flex-1 py-2 rounded-md text-[13px] font-medium transition-colors cursor-pointer',
+    side === s
+      ? s === 'buy' ? 'bg-green text-bg' : 'bg-red text-white'
+      : 'text-secondary hover:text-fg',
+  ].join(' ');
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6 flex items-start justify-center">
+      <div className="w-full max-w-[420px] bg-card border border-line rounded-2xl p-6 flex flex-col gap-5">
+        <div>
+          <h2 className="text-[16px] font-semibold text-fg">Place Order</h2>
+          <p className="text-[12px] text-secondary mt-0.5">Market and limit orders</p>
+        </div>
+
+        {/* Buy / Sell toggle */}
+        <div>
+          <label className="text-[10px] font-medium text-secondary uppercase tracking-wider mb-2 block">
+            Side — Ghost AI reorders by usage
+          </label>
+          <Ghost.Slot zone="apex.trade-side" className="flex gap-2 bg-faint rounded-lg p-1 border border-line">
+            <Ghost.Button id="buy" zone="apex.trade-side" onClick={() => setSide('buy')} className={sideBtnCls('buy')}>
+              Buy
+            </Ghost.Button>
+            <Ghost.Button id="sell" zone="apex.trade-side" onClick={() => setSide('sell')} className={sideBtnCls('sell')}>
+              Sell
+            </Ghost.Button>
+          </Ghost.Slot>
+        </div>
+
+        {/* Asset selector */}
+        <div>
+          <label className="text-[10px] font-medium text-secondary uppercase tracking-wider mb-1.5 block">Asset</label>
+          <select
+            value={ticker}
+            onChange={e => setTicker(e.target.value)}
+            className="w-full bg-faint border border-line-2 rounded-lg px-3 py-2.5 text-[13px] text-fg outline-none focus:border-accent/40 transition-colors cursor-pointer appearance-none"
+          >
+            {POSITIONS.map(p => (
+              <option key={p.ticker} value={p.ticker}>{p.ticker} — {p.name}</option>
+            ))}
+          </select>
+          {selectedPos && (
+            <div className="mt-1.5 text-[11px] font-mono text-secondary">
+              Current price: <span className="text-fg">${fmtPrice(selectedPos.price)}</span>
+              <span className={`ml-2 ${selectedPos.change >= 0 ? 'text-green' : 'text-red'}`}>
+                {selectedPos.change >= 0 ? '+' : ''}{selectedPos.change.toFixed(2)}%
+              </span>
+            </div>
+          )}
+        </div>
+
+        {/* Order type */}
+        <div>
+          <label className="text-[10px] font-medium text-secondary uppercase tracking-wider mb-1.5 block">Order Type</label>
+          <div className="flex gap-2">
+            {(['market', 'limit'] as const).map(t => (
+              <button
+                key={t}
+                onClick={() => setOrderType(t)}
+                className={[
+                  'flex-1 py-2 rounded-md text-[12px] font-medium border transition-colors cursor-pointer capitalize',
+                  orderType === t
+                    ? 'bg-accent-dim border-accent/30 text-accent-text'
+                    : 'border-line-2 text-secondary hover:text-fg hover:border-line',
+                ].join(' ')}
+              >
+                {t}
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* Amount */}
+        <div>
+          <label className="text-[10px] font-medium text-secondary uppercase tracking-wider mb-1.5 block">Amount (USD)</label>
+          <div className="flex items-center gap-2 bg-faint border border-line-2 rounded-lg px-3 py-2.5 focus-within:border-accent/40 transition-colors">
+            <span className="text-secondary font-mono">$</span>
+            <input
+              type="number"
+              value={amount}
+              onChange={e => setAmount(e.target.value)}
+              placeholder="0.00"
+              className="flex-1 bg-transparent text-fg font-mono text-[14px] outline-none placeholder:text-muted"
+            />
+          </div>
+        </div>
+
+        {/* Limit price */}
+        {orderType === 'limit' && (
+          <div>
+            <label className="text-[10px] font-medium text-secondary uppercase tracking-wider mb-1.5 block">Limit Price</label>
+            <div className="flex items-center gap-2 bg-faint border border-line-2 rounded-lg px-3 py-2.5 focus-within:border-accent/40 transition-colors">
+              <span className="text-secondary font-mono">$</span>
+              <input
+                type="number"
+                value={limitPrice}
+                onChange={e => setLimitPrice(e.target.value)}
+                placeholder={selectedPos ? fmtPrice(selectedPos.price) : '0.00'}
+                className="flex-1 bg-transparent text-fg font-mono text-[14px] outline-none placeholder:text-muted"
+              />
+            </div>
+          </div>
+        )}
+
+        {/* Estimated shares */}
+        {estShares > 0 && (
+          <div className="bg-faint rounded-lg px-4 py-3 border border-line-2">
+            <div className="text-[10px] text-secondary uppercase tracking-wider mb-1">Estimated</div>
+            <div className="font-mono text-[13px] text-fg">{estShares < 0.01 ? estShares.toFixed(6) : estShares.toFixed(4)} <span className="text-secondary">{ticker}</span></div>
+          </div>
+        )}
+
+        <button
+          onClick={handleSubmit}
+          className={[
+            'w-full py-3 rounded-xl text-[14px] font-semibold transition-colors cursor-pointer',
+            side === 'buy'
+              ? 'bg-green text-bg hover:bg-green/90'
+              : 'bg-red text-white hover:bg-red/90',
+          ].join(' ')}
+        >
+          {side === 'buy' ? 'Buy' : 'Sell'} {ticker}
+        </button>
+
+        <p className="text-[10px] text-center text-secondary/60">
+          Orders are simulated · No real funds involved
+        </p>
+      </div>
+    </div>
+  );
+}
+
+// ─── History View ─────────────────────────────────────────────────────────────
+
+type HistoryFilter = 'All' | 'Buys' | 'Sells' | 'Dividends';
+
+function HistoryView() {
+  const [filter, setFilter] = useState<HistoryFilter>('All');
+
+  const filtered = HISTORY_TXNS.filter(t => {
+    if (filter === 'Buys') return t.type === 'BUY';
+    if (filter === 'Sells') return t.type === 'SELL';
+    if (filter === 'Dividends') return t.type === 'DIV';
+    return true;
+  });
+
+  const filterBtnCls = (f: HistoryFilter) => [
+    'px-3 py-1.5 rounded-md text-[12px] font-medium transition-colors cursor-pointer',
+    filter === f
+      ? 'bg-accent-dim text-accent-text border border-accent/20'
+      : 'text-secondary hover:text-fg border border-transparent',
+  ].join(' ');
+
+  return (
+    <div className="flex-1 overflow-y-auto p-6">
+      <div className="flex items-center justify-between mb-6">
+        <div>
+          <h2 className="text-[18px] font-semibold text-fg">Transaction History</h2>
+          <p className="text-[12px] text-secondary mt-0.5">{HISTORY_TXNS.length} transactions · Ghost AI reorders filters</p>
+        </div>
+      </div>
+
+      {/* Filter tabs */}
+      <div className="mb-4">
+        <Ghost.Slot zone="apex.history-filter" className="flex items-center gap-1 bg-faint border border-line rounded-lg p-1 w-fit">
+          <Ghost.Button id="filter-all"       zone="apex.history-filter" onClick={() => setFilter('All')}       className={filterBtnCls('All')}>All</Ghost.Button>
+          <Ghost.Button id="filter-buys"      zone="apex.history-filter" onClick={() => setFilter('Buys')}      className={filterBtnCls('Buys')}>Buys</Ghost.Button>
+          <Ghost.Button id="filter-sells"     zone="apex.history-filter" onClick={() => setFilter('Sells')}     className={filterBtnCls('Sells')}>Sells</Ghost.Button>
+          <Ghost.Button id="filter-dividends" zone="apex.history-filter" onClick={() => setFilter('Dividends')} className={filterBtnCls('Dividends')}>Dividends</Ghost.Button>
+        </Ghost.Slot>
+      </div>
+
+      <div className="bg-card rounded-xl border border-line overflow-hidden">
+        {filtered.length === 0 ? (
+          <div className="px-4 py-12 text-center text-secondary text-[13px]">No transactions match this filter</div>
+        ) : (
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-line">
+                {['Type', 'Asset', 'Shares', 'Price', 'Total', 'Date'].map(h => (
+                  <th key={h} className="px-4 py-3 text-left text-[10px] font-medium text-secondary uppercase tracking-wider">{h}</th>
+                ))}
+              </tr>
+            </thead>
+            <tbody>
+              {filtered.map(txn => {
+                const cfg = TXN_COLORS[txn.type];
+                return (
+                  <tr key={txn.id} className="border-b border-line last:border-0 hover:bg-white/[0.02] transition-colors">
+                    <td className="px-4 py-3.5">
+                      <span
+                        className="text-[10px] font-mono font-semibold px-1.5 py-0.5 rounded"
+                        style={{ background: cfg.bg, color: cfg.text }}
+                      >
+                        {txn.type}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="flex items-center gap-2">
+                        <span className="text-[12px] font-mono font-medium text-fg">{txn.ticker}</span>
+                        <span className="text-[11px] text-secondary">{txn.name}</span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-[12px] text-secondary tabular-nums">{fmtShares(txn.shares)}</span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span className="font-mono text-[12px] text-fg tabular-nums">
+                        {txn.price > 0 ? `$${fmtPrice(txn.price)}` : '—'}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <span
+                        className="font-mono text-[12px] font-medium tabular-nums"
+                        style={{ color: cfg.text }}
+                      >
+                        {txn.type === 'SELL' ? '-' : '+'}${txn.total.toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })}
+                      </span>
+                    </td>
+                    <td className="px-4 py-3.5">
+                      <div className="text-[11px] text-secondary">
+                        <div>{txn.date}</div>
+                        <div className="font-mono">{txn.time}</div>
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
+        )}
       </div>
     </div>
   );
@@ -684,17 +1187,58 @@ function PortfolioView() {
 // ─── Root App ─────────────────────────────────────────────────────────────────
 
 export function App() {
-  const [activeNav, setActiveNav] = useState<NavId>('portfolio');
+  const [nav, setNav] = useState<NavId>('portfolio');
+  const [toasts, setToasts] = useState<ToastMsg[]>([]);
+  const [modal, setModal] = useState<'transfer' | null>(null);
+  const toastId = useRef(0);
+
+  function addToast(text: string, type: ToastMsg['type'] = 'success') {
+    const id = ++toastId.current;
+    setToasts(prev => [...prev, { id, text, type }]);
+    setTimeout(() => setToasts(prev => prev.filter(t => t.id !== id)), 3500);
+  }
+
+  function handlePortfolioAction(action: string) {
+    if (action === 'transfer') {
+      setModal('transfer');
+    } else if (action === 'invest') {
+      addToast('Opening investment options…', 'info');
+    } else if (action === 'deposit') {
+      addToast('Deposit initiated — funds arrive in 1–2 days', 'info');
+    } else if (action === 'withdraw') {
+      addToast('Withdrawal request submitted', 'info');
+    } else if (action === 'statement') {
+      addToast('Statement PDF generated', 'success');
+    }
+  }
+
+  function handleTransferConfirm(amount: string, account: string) {
+    const accountLabel = account === 'bank4521' ? 'Bank ···4521' : account === 'savings8832' ? 'Savings ···8832' : 'External Wallet';
+    addToast(`$${parseFloat(amount).toLocaleString('en-US', { minimumFractionDigits: 2, maximumFractionDigits: 2 })} transferred to ${accountLabel}`, 'success');
+    setModal(null);
+  }
 
   return (
     <GhostProvider persistence={localStorageAdapter('apex-v1')}>
       <div className="flex h-full bg-bg overflow-hidden" style={{ animation: 'fade-in 0.25s ease-out both' }}>
-        <Sidebar active={activeNav} onNav={setActiveNav} />
+        <Sidebar active={nav} onNav={setNav} />
         <div className="flex-1 flex flex-col min-w-0">
           <Topbar />
-          <PortfolioView />
+          {nav === 'portfolio' && <PortfolioView onAction={handlePortfolioAction} />}
+          {nav === 'markets'   && <MarketsView onToast={addToast} />}
+          {nav === 'trade'     && <TradeView onToast={addToast} />}
+          {nav === 'history'   && <HistoryView />}
         </div>
       </div>
+
+      <ToastContainer toasts={toasts} />
+
+      {modal === 'transfer' && (
+        <TransferModal
+          onClose={() => setModal(null)}
+          onConfirm={handleTransferConfirm}
+        />
+      )}
     </GhostProvider>
   );
 }
