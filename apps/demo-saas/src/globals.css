@@ -1,0 +1,56 @@
+@import "tailwindcss";
+
+@theme {
+  --color-bg:          #080b12;
+  --color-bg-elev:     #0d1117;
+  --color-bg-card:     #111722;
+  --color-fg:          #e6edf3;
+  --color-muted:       #7d8590;
+  --color-muted-2:     #484f58;
+  --color-line:        rgba(255, 255, 255, 0.06);
+  --color-line-2:      rgba(255, 255, 255, 0.10);
+
+  --color-accent:      #c4b5fd;
+  --color-accent-2:    #8b5cf6;
+  --color-accent-glow: rgba(167, 139, 250, 0.35);
+
+  --color-green:       #3fb950;
+  --color-orange:      #d29922;
+  --color-red:         #f85149;
+  --color-blue:        #58a6ff;
+}
+
+:root { color-scheme: dark; }
+
+*, *::before, *::after { box-sizing: border-box; }
+
+html, body, #root {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  background: #080b12;
+  color: #e6edf3;
+  -webkit-font-smoothing: antialiased;
+  font-family: ui-sans-serif, system-ui, sans-serif;
+  font-feature-settings: 'ss01', 'ss02';
+  overflow: hidden;
+}
+
+::selection { background: rgba(167, 139, 250, 0.35); color: #fff; }
+
+@keyframes fade-in {
+  from { opacity: 0; transform: translateY(4px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes slide-in {
+  from { opacity: 0; transform: translateX(-8px); }
+  to   { opacity: 1; transform: none; }
+}
+
+@keyframes ghost-reorder {
+  0%   { background: rgba(167, 139, 250, 0.12); }
+  100% { background: transparent; }
+}
