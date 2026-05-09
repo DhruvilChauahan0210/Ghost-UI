@@ -500,7 +500,7 @@ function OverviewView({ onLoadQueueItem }: {
 
 // ─── Create View ──────────────────────────────────────────────────────────────
 
-function CreateView(): ReactNode {
+function CreateView({ onFormat }: { onFormat: (open: string, close: string, placeholder: string) => void }): ReactNode {
   const [selectedPlatforms, setSelectedPlatforms] = useState<string[]>(['twitter']);
   const [postAction, setPostAction] = useState('schedule');
   const [postScheduleTime, setPostScheduleTime] = useState('today-3pm');
@@ -557,13 +557,13 @@ function CreateView(): ReactNode {
         </div>
 
         <Ghost.Toolbar zone="studio.editor-toolbar" className="flex items-center gap-0.5 px-2 py-1.5 border-b border-[var(--color-line)]">
-          <Ghost.Toolbar.Button id="tb-bold"   zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px] font-bold">B</Ghost.Toolbar.Button>
-          <Ghost.Toolbar.Button id="tb-italic" zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px] italic">I</Ghost.Toolbar.Button>
-          <Ghost.Toolbar.Button id="tb-link"   zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">🔗</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-bold"   zone="studio.editor-toolbar" onClick={() => onFormat('**', '**', 'bold text')}         className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px] font-bold">B</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-italic" zone="studio.editor-toolbar" onClick={() => onFormat('_', '_', 'italic text')}         className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px] italic">I</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-link"   zone="studio.editor-toolbar" onClick={() => onFormat('[', '](https://)', 'link text')} className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">🔗</Ghost.Toolbar.Button>
           <Ghost.Toolbar.Separator className="w-px h-4 bg-white/[0.06] mx-1" />
-          <Ghost.Toolbar.Button id="tb-emoji"  zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px]">😊</Ghost.Toolbar.Button>
-          <Ghost.Toolbar.Button id="tb-image"  zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">📎</Ghost.Toolbar.Button>
-          <Ghost.Toolbar.Button id="tb-thread" zone="studio.editor-toolbar" className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">＋</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-emoji"  zone="studio.editor-toolbar" onClick={() => onFormat('😊 ', '', '')}                   className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px]">😊</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-image"  zone="studio.editor-toolbar" onClick={() => onFormat('![image](', ')', 'url')}         className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">📎</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button id="tb-thread" zone="studio.editor-toolbar" onClick={() => onFormat('\n\n🧵 ', '', '')}                className="p-1.5 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">＋</Ghost.Toolbar.Button>
         </Ghost.Toolbar>
 
         <div className="px-4 py-3">
@@ -973,6 +973,33 @@ function ComposePanel({
   const charCount = compose.length;
   const charPct = charLimit > 0 ? charCount / charLimit : 0;
   const charColor = charPct >= 0.95 ? 'var(--color-red)' : charPct >= 0.8 ? 'var(--color-amber)' : 'var(--color-green)';
+  const textareaRef = useRef<HTMLTextAreaElement>(null);
+
+  function wrapSelection(open: string, close: string, placeholder: string): void {
+    const el = textareaRef.current;
+    if (!el) { setCompose(compose + open + placeholder + close); return; }
+    const start = el.selectionStart;
+    const end = el.selectionEnd;
+    const selected = compose.slice(start, end) || placeholder;
+    const next = compose.slice(0, start) + open + selected + close + compose.slice(end);
+    setCompose(next);
+    requestAnimationFrame(() => {
+      el.focus();
+      el.setSelectionRange(start + open.length, start + open.length + selected.length);
+    });
+  }
+
+  function insertAtCursor(text: string): void {
+    const el = textareaRef.current;
+    if (!el) { setCompose(compose + text); return; }
+    const pos = el.selectionStart;
+    const next = compose.slice(0, pos) + text + compose.slice(pos);
+    setCompose(next);
+    requestAnimationFrame(() => { el.focus(); el.setSelectionRange(pos + text.length, pos + text.length); });
+  }
+
+  const EMOJIS = ['😊', '🔥', '🚀', '💡', '✨', '🎯', '📈', '💪'];
+  const emojiIdx = useRef(0);
 
   function handleSuggestion(s: string): void {
     if (s === 'Add trending hashtags') {
@@ -1057,7 +1084,19 @@ function ComposePanel({
           className="relative rounded-xl overflow-hidden"
           style={{ border: '1px solid var(--color-line-2)' }}
         >
+          {/* Formatting toolbar */}
+          <div className="flex items-center gap-0.5 px-2 py-1.5 border-b" style={{ borderColor: 'var(--color-line)', background: 'var(--color-card)' }}>
+            <Ghost.Toolbar zone="studio.compose-toolbar" className="flex items-center gap-0.5">
+              <Ghost.Toolbar.Button id="fmt-bold"   zone="studio.compose-toolbar" onClick={() => wrapSelection('**', '**', 'bold text')}   className="px-1.5 py-1 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px] font-bold">B</Ghost.Toolbar.Button>
+              <Ghost.Toolbar.Button id="fmt-italic" zone="studio.compose-toolbar" onClick={() => wrapSelection('_', '_', 'italic text')}   className="px-1.5 py-1 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px] italic">I</Ghost.Toolbar.Button>
+              <Ghost.Toolbar.Button id="fmt-link"   zone="studio.compose-toolbar" onClick={() => wrapSelection('[', '](https://)', 'link text')} className="px-1.5 py-1 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">🔗</Ghost.Toolbar.Button>
+              <Ghost.Toolbar.Separator className="w-px h-4 bg-white/[0.06] mx-1" />
+              <Ghost.Toolbar.Button id="fmt-emoji"  zone="studio.compose-toolbar" onClick={() => { insertAtCursor(EMOJIS[emojiIdx.current % EMOJIS.length]!); emojiIdx.current++; }} className="px-1.5 py-1 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[13px]">😊</Ghost.Toolbar.Button>
+              <Ghost.Toolbar.Button id="fmt-thread" zone="studio.compose-toolbar" onClick={() => insertAtCursor('\n\n🧵 ')}                className="px-1.5 py-1 rounded text-[var(--color-secondary)] hover:text-[var(--color-fg)] hover:bg-white/[0.05] transition-colors cursor-pointer text-[12px]">＋</Ghost.Toolbar.Button>
+            </Ghost.Toolbar>
+          </div>
           <textarea
+            ref={textareaRef}
             value={compose}
             onChange={e => setCompose(e.target.value)}
             placeholder="What's on your mind? Let AI help you craft it…"
@@ -1355,6 +1394,11 @@ export function App(): ReactNode {
     }
   }
 
+  function handleFormat(open: string, close: string, placeholder: string): void {
+    setCompose(prev => prev + open + placeholder + close);
+    setNav('create');
+  }
+
   function loadQueueItem(item: typeof QUEUE[number]): void {
     setCompose(item.text);
     setActiveChannel(item.platform);
@@ -1418,7 +1462,7 @@ export function App(): ReactNode {
           </div>
 
           {nav === 'overview'   && <OverviewView onLoadQueueItem={loadQueueItem} />}
-          {nav === 'create'     && <CreateView />}
+          {nav === 'create'     && <CreateView onFormat={handleFormat} />}
           {nav === 'scheduled'  && (
             <ScheduledView
               queue={queue}

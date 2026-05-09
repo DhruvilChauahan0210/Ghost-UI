@@ -54,6 +54,7 @@ export function App() {
 function LuxeApp() {
   const [category, setCategory] = useState('All');
   const [sortBy, setSortBy] = useState('sort-new');
+  const [viewLayout, setViewLayout] = useState<'grid' | 'list'>('grid');
   const [cart, setCart] = useState<Set<string>>(new Set());
   const [wishlist, setWishlist] = useState<Set<string>>(new Set());
   const [quickView, setQuickView] = useState<Product | null>(null);
@@ -81,9 +82,14 @@ function LuxeApp() {
       <SiteHeader cartCount={cart.size} wishlistCount={wishlist.size} />
       <CategoryNav category={category} setCategory={setCategory} />
       <main className="max-w-[1400px] mx-auto px-8 py-10">
-        <CollectionHeader category={category} count={filtered.length} sortBy={sortBy} setSortBy={setSortBy} />
+        <CollectionHeader category={category} count={filtered.length} sortBy={sortBy} setSortBy={setSortBy} viewLayout={viewLayout} setViewLayout={setViewLayout} />
         <GhostHintBar />
-        <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10 mt-6">
+        <div className={[
+          'mt-6',
+          viewLayout === 'grid'
+            ? 'grid grid-cols-2 md:grid-cols-3 lg:grid-cols-4 gap-x-5 gap-y-10'
+            : 'flex flex-col gap-4',
+        ].join(' ')}>
           {filtered.map((product, i) => (
             <ProductCard
               key={product.id}
@@ -93,6 +99,7 @@ function LuxeApp() {
               selectedSize={selectedSize[product.id] ?? ''}
               onSizeSelect={s => setSelectedSize(prev => ({ ...prev, [product.id]: s }))}
               onAction={aid => handleAction(aid, product)}
+              viewLayout={viewLayout}
               index={i}
             />
           ))}
@@ -200,7 +207,7 @@ function CategoryNav({ category, setCategory }: { category: string; setCategory:
   );
 }
 
-function CollectionHeader({ category, count, sortBy, setSortBy }: { category: string; count: number; sortBy: string; setSortBy: (id: string) => void }) {
+function CollectionHeader({ category, count, sortBy, setSortBy, viewLayout, setViewLayout }: { category: string; count: number; sortBy: string; setSortBy: (id: string) => void; viewLayout: 'grid' | 'list'; setViewLayout: (v: 'grid' | 'list') => void }) {
   const title = category === 'All' ? 'The Summer Edit' : category;
   return (
     <div className="flex items-end justify-between pb-6 border-b border-[#1a1714]/[0.08]">
@@ -216,8 +223,16 @@ function CollectionHeader({ category, count, sortBy, setSortBy }: { category: st
       </div>
       <div className="flex items-center gap-3">
         <Ghost.Toolbar zone="luxe.grid-toolbar" className="flex items-center gap-1">
-          <Ghost.Toolbar.Button id="tb-grid" zone="luxe.grid-toolbar" className="p-1.5 rounded text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208] transition-colors cursor-pointer">⊞</Ghost.Toolbar.Button>
-          <Ghost.Toolbar.Button id="tb-list" zone="luxe.grid-toolbar" className="p-1.5 rounded text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208] transition-colors cursor-pointer">☰</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button
+            id="tb-grid" zone="luxe.grid-toolbar"
+            onClick={() => setViewLayout('grid')}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${viewLayout === 'grid' ? 'text-[#c9a05a] bg-[#1a1208]' : 'text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208]'}`}
+          >⊞</Ghost.Toolbar.Button>
+          <Ghost.Toolbar.Button
+            id="tb-list" zone="luxe.grid-toolbar"
+            onClick={() => setViewLayout('list')}
+            className={`p-1.5 rounded transition-colors cursor-pointer ${viewLayout === 'list' ? 'text-[#c9a05a] bg-[#1a1208]' : 'text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208]'}`}
+          >☰</Ghost.Toolbar.Button>
           <Ghost.Toolbar.Separator className="w-px h-4 bg-[#2a1e0a] mx-1" />
           <Ghost.Toolbar.Button id="tb-filter" zone="luxe.grid-toolbar" className="px-2 py-1 rounded text-[10px] text-[#5a4a2a] hover:text-[#c9a05a] hover:bg-[#1a1208] transition-colors cursor-pointer">Filter</Ghost.Toolbar.Button>
         </Ghost.Toolbar>
@@ -253,15 +268,57 @@ function GhostHintBar() {
   );
 }
 
-function ProductCard({ product, inCart, inWishlist, selectedSize, onSizeSelect, onAction, index }: {
+function ProductCard({ product, inCart, inWishlist, selectedSize, onSizeSelect, onAction, viewLayout, index }: {
   product: Product;
   inCart: boolean;
   inWishlist: boolean;
   selectedSize: string;
   onSizeSelect: (s: string) => void;
   onAction: (id: string) => void;
+  viewLayout: 'grid' | 'list';
   index: number;
 }) {
+  if (viewLayout === 'list') {
+    return (
+      <Ghost.ContextMenu zone="luxe.product-ctx">
+        <Ghost.ContextMenu.Trigger>
+          <div className="flex items-center gap-6 py-4 border-b border-[#1a1714]/[0.07] group" style={{ animation: 'fade-up 0.3s ease both', animationDelay: `${Math.min(index * 30, 240)}ms` }}>
+            <div className="relative w-[90px] h-[120px] overflow-hidden bg-[#ede9e3] rounded shrink-0">
+              <img src={product.img} alt={product.name} className="absolute inset-0 w-full h-full object-cover transition-transform duration-500 group-hover:scale-[1.03]" loading="lazy" />
+              {product.badge && <span className={`absolute top-2 left-2 text-[8.5px] font-semibold tracking-[0.10em] uppercase px-1.5 py-0.5 ${product.badge === 'Sale' ? 'bg-white text-[#b53a22]' : product.badge === 'New' ? 'bg-[#1a1714] text-white' : 'bg-[#b5892a] text-white'}`}>{product.badge}</span>}
+            </div>
+            <div className="flex-1 min-w-0">
+              <p className="text-[10px] tracking-[0.12em] uppercase text-[#a09890] mb-1">{product.designer}</p>
+              <h3 className="text-[18px] leading-snug text-[#1a1714] mb-1" style={{ fontFamily: "'Playfair Display', Georgia, serif", fontWeight: 400 }}>{product.name}</h3>
+              <p className="text-[12px] text-[#6e6560] leading-relaxed line-clamp-2 mb-3">{product.description}</p>
+              <div className="flex flex-wrap gap-1">
+                {product.sizes.slice(0, 6).map(s => (
+                  <button key={s} onClick={() => onSizeSelect(s)} className={`text-[9.5px] px-1.5 py-0.5 border transition-colors cursor-pointer ${selectedSize === s ? 'border-[#1a1714] text-[#1a1714] bg-[#1a1714]/[0.05]' : 'border-[#1a1714]/[0.14] text-[#a09890] hover:border-[#1a1714]/[0.35]'}`}>{s}</button>
+                ))}
+              </div>
+            </div>
+            <div className="flex flex-col items-end gap-3 shrink-0">
+              <div className="text-right">
+                <p className="text-[15px] font-semibold text-[#1a1714] tabular-nums">${product.price.toLocaleString()}</p>
+                {product.originalPrice && <p className="text-[11px] text-[#b53a22] line-through tabular-nums">${product.originalPrice.toLocaleString()}</p>}
+              </div>
+              <div className="flex gap-2">
+                <button onClick={() => onAction('act-wishlist')} className={`p-2 rounded border transition-colors cursor-pointer ${inWishlist ? 'border-[#b5892a]/40 text-[#b5892a] bg-[#b5892a]/5' : 'border-[#1a1714]/[0.14] text-[#a09890] hover:text-[#1a1714]'}`}><IcHeart /></button>
+                <button onClick={() => onAction('act-bag')} className={`px-4 py-2 text-[11px] font-medium tracking-[0.05em] uppercase transition-colors cursor-pointer border-0 ${inCart ? 'bg-[#22a352] text-white' : 'bg-[#1a1714] text-white hover:bg-[#333]'}`}>{inCart ? 'In Bag' : 'Add to Bag'}</button>
+              </div>
+            </div>
+          </div>
+        </Ghost.ContextMenu.Trigger>
+        <Ghost.ContextMenu.Content className="bg-[#0f0b05] border border-[#2a1e0a] rounded-xl shadow-2xl shadow-black/80 py-1 min-w-[160px]">
+          <Ghost.ContextMenu.Item id="ctx-view" onClick={() => onAction('act-quickview')} className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">View details</Ghost.ContextMenu.Item>
+          <Ghost.ContextMenu.Item id="ctx-wishlist" onClick={() => onAction('act-wishlist')} className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Add to wishlist</Ghost.ContextMenu.Item>
+          <Ghost.ContextMenu.Separator className="border-[#2a1e0a] my-1" />
+          <Ghost.ContextMenu.Item id="ctx-share" onClick={() => { navigator.clipboard?.writeText(product.name + ' — $' + product.price).catch(() => {}); }} className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Copy to clipboard</Ghost.ContextMenu.Item>
+        </Ghost.ContextMenu.Content>
+      </Ghost.ContextMenu>
+    );
+  }
+
   return (
     <Ghost.ContextMenu zone="luxe.product-ctx">
       <Ghost.ContextMenu.Trigger>
@@ -362,11 +419,11 @@ function ProductCard({ product, inCart, inWishlist, selectedSize, onSizeSelect, 
     </div>
       </Ghost.ContextMenu.Trigger>
       <Ghost.ContextMenu.Content className="bg-[#0f0b05] border border-[#2a1e0a] rounded-xl shadow-2xl shadow-black/80 py-1 min-w-[160px]">
-        <Ghost.ContextMenu.Item id="ctx-view" className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">View details</Ghost.ContextMenu.Item>
-        <Ghost.ContextMenu.Item id="ctx-wishlist" className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Add to wishlist</Ghost.ContextMenu.Item>
-        <Ghost.ContextMenu.Item id="ctx-compare" className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Compare</Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item id="ctx-view" onClick={() => onAction('act-quickview')} className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">View details</Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item id="ctx-wishlist" onClick={() => onAction('act-wishlist')} className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Add to wishlist</Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item id="ctx-compare" onClick={() => onAction('act-quickview')} className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Compare</Ghost.ContextMenu.Item>
         <Ghost.ContextMenu.Separator className="border-[#2a1e0a] my-1" />
-        <Ghost.ContextMenu.Item id="ctx-share" className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Share</Ghost.ContextMenu.Item>
+        <Ghost.ContextMenu.Item id="ctx-share" onClick={() => { navigator.clipboard?.writeText(product.name + ' — $' + product.price).catch(() => {}); }} className="px-3 py-2 text-[12px] text-[#c8b89a] hover:bg-[#1a1208] cursor-pointer">Copy to clipboard</Ghost.ContextMenu.Item>
       </Ghost.ContextMenu.Content>
     </Ghost.ContextMenu>
   );

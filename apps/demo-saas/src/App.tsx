@@ -107,31 +107,12 @@ function lc(l: string) {
   return (LABEL_CFG[l] ?? 'bg-white/[0.03] text-[#5a5a72] border-white/[0.07]') + ' text-[10px] font-semibold px-1.5 py-0.5 rounded-md border tracking-wide';
 }
 
-const COMMANDS: GhostCommand[] = [
-  { id: 'nav-inbox',            label: 'Go to Inbox',         group: 'Navigate', onSelect: () => {} },
-  { id: 'nav-my',               label: 'Go to My Issues',     group: 'Navigate', onSelect: () => {} },
-  { id: 'nav-all',              label: 'Go to All Issues',    group: 'Navigate', onSelect: () => {} },
-  { id: 'nav-cycles',           label: 'Go to Cycles',        group: 'Navigate', onSelect: () => {} },
-  { id: 'nav-roadmap',          label: 'Go to Roadmap',       group: 'Navigate', onSelect: () => {} },
-  { id: 'nav-backlog',          label: 'Go to Backlog',       group: 'Navigate', onSelect: () => {} },
-  { id: 'act-resolve',          label: 'Resolve issue',       group: 'Actions',  onSelect: () => {} },
-  { id: 'act-comment',          label: 'Add comment',         group: 'Actions',  onSelect: () => {} },
-  { id: 'act-assign',           label: 'Assign issue',        group: 'Actions',  onSelect: () => {} },
-  { id: 'act-label',            label: 'Add label',           group: 'Actions',  onSelect: () => {} },
-  { id: 'act-archive',          label: 'Archive issue',       group: 'Actions',  onSelect: () => {} },
-  { id: 'act-close',            label: 'Close issue',         group: 'Actions',  onSelect: () => {} },
-  { id: 'filter-status-todo',   label: 'Filter: Todo',        group: 'Filter',   onSelect: () => {} },
-  { id: 'filter-status-progress', label: 'Filter: In Progress', group: 'Filter', onSelect: () => {} },
-  { id: 'filter-status-done',   label: 'Filter: Done',        group: 'Filter',   onSelect: () => {} },
-];
-
 export function App() {
   return (
     <GhostProvider persistence={localStorageAdapter('orbit-v3')}>
       <GhostToastProvider position="bottom-right">
         <GhostCommandPaletteProvider>
           <OrbitShell />
-          <Ghost.CommandPalette zone="orbit.cmd" commands={COMMANDS} hotkey={true} />
           <GhostDemoBar />
           <GhostDevtools defaultOpen={true} />
         </GhostCommandPaletteProvider>
@@ -144,14 +125,34 @@ function OrbitShell() {
   const [activeNav, setActiveNav] = useState('nav-all');
   const [selected, setSelected] = useState<Issue | null>(ISSUES[0] ?? null);
   const [filterStatus, setFilterStatus] = useState<Status | 'all'>('all');
+  const { toast } = useGhostToast();
 
   const visible = useMemo(() => {
     const base = activeNav === 'nav-my' ? ISSUES.filter(i => i.initials === 'MC') : ISSUES;
     return filterStatus === 'all' ? base : base.filter(i => i.status === filterStatus);
   }, [activeNav, filterStatus]);
 
+  const commands: GhostCommand[] = useMemo(() => [
+    { id: 'nav-inbox',   label: 'Go to Inbox',         group: 'Navigate', onSelect: () => { setActiveNav('nav-inbox');   setFilterStatus('all'); } },
+    { id: 'nav-my',      label: 'Go to My Issues',     group: 'Navigate', onSelect: () => { setActiveNav('nav-my');      setFilterStatus('all'); } },
+    { id: 'nav-all',     label: 'Go to All Issues',    group: 'Navigate', onSelect: () => { setActiveNav('nav-all');     setFilterStatus('all'); } },
+    { id: 'nav-cycles',  label: 'Go to Cycles',        group: 'Navigate', onSelect: () => { setActiveNav('nav-cycles');  setFilterStatus('all'); } },
+    { id: 'nav-roadmap', label: 'Go to Roadmap',       group: 'Navigate', onSelect: () => { setActiveNav('nav-roadmap'); setFilterStatus('all'); } },
+    { id: 'nav-backlog', label: 'Go to Backlog',       group: 'Navigate', onSelect: () => { setActiveNav('nav-backlog'); setFilterStatus('all'); } },
+    { id: 'act-resolve', label: 'Resolve issue',       group: 'Actions',  onSelect: () => { if (selected) toast({ zone: 'orbit.cmd', variant: 'success', message: `${selected.id} marked as done` }); } },
+    { id: 'act-comment', label: 'Add comment',         group: 'Actions',  onSelect: () => { if (selected) toast({ zone: 'orbit.cmd', variant: 'info',    message: `Comment added to ${selected.id}` }); } },
+    { id: 'act-assign',  label: 'Assign issue',        group: 'Actions',  onSelect: () => { if (selected) toast({ zone: 'orbit.cmd', variant: 'success', message: `${selected.id} assigned to you` }); } },
+    { id: 'act-label',   label: 'Add label',           group: 'Actions',  onSelect: () => { if (selected) toast({ zone: 'orbit.cmd', variant: 'info',    message: `Label added to ${selected.id}` }); } },
+    { id: 'act-archive', label: 'Archive issue',       group: 'Actions',  onSelect: () => { if (selected) toast({ zone: 'orbit.cmd', variant: 'info',    message: `${selected.id} archived` }); } },
+    { id: 'act-close',   label: 'Close issue',         group: 'Actions',  onSelect: () => { if (selected) { toast({ zone: 'orbit.cmd', variant: 'success', message: `${selected.id} closed` }); setSelected(null); } } },
+    { id: 'filter-status-todo',     label: 'Filter: Todo',        group: 'Filter', onSelect: () => setFilterStatus('todo') },
+    { id: 'filter-status-progress', label: 'Filter: In Progress', group: 'Filter', onSelect: () => setFilterStatus('in-progress') },
+    { id: 'filter-status-done',     label: 'Filter: Done',        group: 'Filter', onSelect: () => setFilterStatus('done') },
+  ], [selected, toast]);
+
   return (
     <div className="flex h-full overflow-hidden text-[#e6e6f0]" style={{ background: 'radial-gradient(ellipse 100% 40% at 50% -5%, rgba(92,94,240,0.10) 0%, transparent 55%), #060609' }}>
+      <Ghost.CommandPalette zone="orbit.cmd" commands={commands} hotkey={true} />
       <Sidebar active={activeNav} setActive={setActiveNav} />
       <div className="flex flex-1 min-w-0">
         <IssueList
