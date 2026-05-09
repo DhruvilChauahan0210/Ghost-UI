@@ -9,6 +9,8 @@ export { GhostTab, GhostTabList, GhostTabItem, GhostTabPanel } from './tabs.js';
 export type { GhostTabProps, GhostTabListProps, GhostTabItemProps, GhostTabPanelProps } from './tabs.js';
 export { GhostToastProvider, useGhostToast } from './toast.js';
 export type { GhostToastProviderProps, ToastOptions, ToastVariant } from './toast.js';
+export { GhostCombobox, GhostComboboxInput, GhostComboboxList, GhostComboboxOption, GhostComboboxEmpty } from './combobox.js';
+export type { GhostComboboxProps, GhostComboboxInputProps, GhostComboboxListProps, GhostComboboxOptionProps, GhostComboboxEmptyProps } from './combobox.js';
 export type { GhostEvent, GhostNode, GhostId, ZoneId, LayoutPlan, GravityTier } from '@ghost-ui/core';
 export { GhostGrid, GhostCanvas } from './components.js';
 export { localStorageAdapter, memoryAdapter, serverAdapter, compositeAdapter } from '@ghost-ui/core';

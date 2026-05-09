@@ -27,6 +27,7 @@ const GhostPrivacyContext = createContext<GhostPrivacyCtx>({
 const OPT_OUT_KEY = 'ghost-ui:opt-out';
 
 function readOptOut(): boolean {
+  if (typeof window === 'undefined') return false;
   try {
     return localStorage.getItem(OPT_OUT_KEY) === '1';
   } catch {
@@ -35,11 +36,12 @@ function readOptOut(): boolean {
 }
 
 function writeOptOut(v: boolean): void {
+  if (typeof window === 'undefined') return;
   try {
     if (v) localStorage.setItem(OPT_OUT_KEY, '1');
     else localStorage.removeItem(OPT_OUT_KEY);
   } catch {
-    // ignore (SSR / private browsing)
+    // ignore (private browsing / permissions)
   }
 }
 
