@@ -51,6 +51,12 @@ export interface ScoringWeights {
   recency: number;
   regret: number;
   rage: number;
+  /**
+   * Score bonus per inbound transition — awarded each time this node was
+   * clicked immediately after hovering a different node (intent chaining).
+   * Default: 1.5
+   */
+  transition: number;
 }
 
 export const DEFAULT_WEIGHTS: ScoringWeights = {
@@ -60,4 +66,5 @@ export const DEFAULT_WEIGHTS: ScoringWeights = {
   recency: 1.5,
   regret: -4,
   rage: -6,
+  transition: 1.5,
 };

@@ -14,7 +14,7 @@ export interface EngineOptions {
   recomputeDebounceMs?: number;
   /** ms between auto-saves. Default 1000ms. */
   saveDebounceMs?: number;
-  scoring?: Pick<OptimizeInput, 'weights' | 'windowMs' | 'halfLifeMs'>;
+  scoring?: Pick<OptimizeInput, 'weights' | 'windowMs' | 'halfLifeMs' | 'intentWindowMs'>;
   /** CSS Grid area tier boundaries for GhostGrid. */
   gridTiers?: Pick<OptimizeInput, 'primaryCount' | 'secondaryCount'>;
   /** Canvas edge padding for GhostCanvas position computation. Default 0.10. */
@@ -102,7 +102,8 @@ export class GhostEngine {
     const windowMs = this.scoring?.windowMs ?? 7 * 24 * 60 * 60 * 1000;
     const halfLife = this.scoring?.halfLifeMs ?? 24 * 60 * 60 * 1000;
     const events = this.cachedEvents ?? (this.cachedEvents = this.observer.events());
-    return explainScore(nodeId, node, events, w, windowMs, halfLife, this.now());
+    const intentWindowMs = this.scoring?.intentWindowMs ?? 2000;
+    return explainScore(nodeId, node, events, w, windowMs, halfLife, this.now(), intentWindowMs);
   }
 
   getOrder(zone: ZoneId): GhostId[] {

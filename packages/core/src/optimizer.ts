@@ -28,6 +28,13 @@ export interface OptimizeInput {
    * sit flush against the container edge.
    */
   canvasPadding?: number;
+  /**
+   * ms — hover→click window used for transition detection.
+   * A click within this window after hovering a different node is counted as
+   * an inbound transition for the clicked node.
+   * Default: 2000 (matches Observer default)
+   */
+  intentWindowMs?: number;
 }
 
 interface PerNode {
@@ -39,6 +46,8 @@ interface PerNode {
   lastTs: number;
   missDx: number[];
   missDy: number[];
+  /** Times this node was clicked shortly after a hover on a *different* node. */
+  transitionInCount: number;
 }
 
 const empty = (): PerNode => ({
@@ -50,6 +59,7 @@ const empty = (): PerNode => ({
   lastTs: 0,
   missDx: [],
   missDy: [],
+  transitionInCount: 0,
 });
 
 export function optimize(input: OptimizeInput): LayoutPlan {
@@ -57,9 +67,14 @@ export function optimize(input: OptimizeInput): LayoutPlan {
   const now = input.now ?? Date.now();
   const windowMs = input.windowMs ?? 7 * 24 * 60 * 60 * 1000;
   const halfLife = input.halfLifeMs ?? 24 * 60 * 60 * 1000;
+  const intentWindowMs = input.intentWindowMs ?? 2000;
 
   const stats = new Map<GhostId, PerNode>();
   for (const n of input.nodes) stats.set(n.id, empty());
+
+  // Track last hover within the intent window for transition detection.
+  // Events arrive in chronological order from the RingBuffer.
+  let lastHover: { id: GhostId; ts: number } | null = null;
 
   for (const e of input.events) {
     if (now - e.ts > windowMs) continue;
@@ -67,12 +82,23 @@ export function optimize(input: OptimizeInput): LayoutPlan {
     if (!s) continue;
     if (e.ts > s.lastTs) s.lastTs = e.ts;
     switch (e.type) {
-      case 'click':
+      case 'click': {
         s.clicks += 1;
         if (e.regret) s.regrets += 1;
+        // Count as an inbound transition if preceded by a hover on a different
+        // node within the intent window.
+        if (
+          lastHover !== null &&
+          lastHover.id !== e.id &&
+          e.ts - lastHover.ts <= intentWindowMs
+        ) {
+          s.transitionInCount += 1;
+        }
         break;
+      }
       case 'hover':
         s.hoverCount += 1;
+        lastHover = { id: e.id, ts: e.ts };
         break;
       case 'dwell':
         s.dwellMs += e.ms ?? 0;
@@ -100,7 +126,8 @@ export function optimize(input: OptimizeInput): LayoutPlan {
       w.hover * s.hoverCount +
       w.dwell * s.dwellMs +
       w.regret * s.regrets +
-      w.rage * s.rages;
+      w.rage * s.rages +
+      w.transition * s.transitionInCount;
     const score = base * (1 + w.recency * recency);
     scored.set(node.id, score);
     if (score > max) max = score;
@@ -212,6 +239,8 @@ export interface ScoreBreakdown {
   dwellScore: number;
   regretPenalty: number;
   ragePenalty: number;
+  /** Score contribution from inbound hover→click transitions. */
+  transitionScore: number;
   recencyMultiplier: number;
   totalScore: number;
   emphasis: number;
@@ -225,17 +254,38 @@ export function explainScore(
   windowMs: number,
   halfLifeMs: number,
   now: number,
+  intentWindowMs = 2000,
 ): ScoreBreakdown {
-  const stats = { clicks: 0, hoverCount: 0, dwellMs: 0, regrets: 0, rages: 0, lastTs: 0 };
+  const stats = {
+    clicks: 0,
+    hoverCount: 0,
+    dwellMs: 0,
+    regrets: 0,
+    rages: 0,
+    lastTs: 0,
+    transitionInCount: 0,
+  };
+
+  // Single pass: track last hover globally to detect transitions into nodeId.
+  let lastHover: { id: GhostId; ts: number } | null = null;
 
   for (const e of events) {
     if (now - e.ts > windowMs) continue;
+
+    if (e.type === 'hover') {
+      lastHover = { id: e.id, ts: e.ts };
+    }
+
     if (e.id !== nodeId) continue;
     if (e.ts > stats.lastTs) stats.lastTs = e.ts;
+
     switch (e.type) {
       case 'click':
         stats.clicks += 1;
         if (e.regret) stats.regrets += 1;
+        if (lastHover && lastHover.id !== nodeId && e.ts - lastHover.ts <= intentWindowMs) {
+          stats.transitionInCount += 1;
+        }
         break;
       case 'hover':
         stats.hoverCount += 1;
@@ -255,16 +305,17 @@ export function explainScore(
   const dwellScore = weights.dwell * stats.dwellMs;
   const regretPenalty = weights.regret * stats.regrets;
   const ragePenalty = weights.rage * stats.rages;
+  const transitionScore = weights.transition * stats.transitionInCount;
 
   const ageMs = stats.lastTs ? Math.max(0, now - stats.lastTs) : windowMs;
   const recency = Math.pow(0.5, ageMs / halfLifeMs);
   const recencyMultiplier = 1 + weights.recency * recency;
 
-  const base = baseWeight + clickScore + hoverScore + dwellScore + regretPenalty + ragePenalty;
+  const base =
+    baseWeight + clickScore + hoverScore + dwellScore +
+    regretPenalty + ragePenalty + transitionScore;
   const totalScore = base * recencyMultiplier;
 
-  // For emphasis, we'd need max/min from all nodes, so just return 0 here
-  // Callers can compute emphasis = (score - min) / (max - min) if they have all scores
   const emphasis = node.pinned ? 0 : 0;
 
   return {
@@ -275,6 +326,7 @@ export function explainScore(
     dwellScore,
     regretPenalty,
     ragePenalty,
+    transitionScore,
     recencyMultiplier,
     totalScore,
     emphasis,

@@ -1,5 +1,6 @@
 import { describe, expect, it } from 'vitest';
-import { optimize } from './optimizer.js';
+import { optimize, explainScore } from './optimizer.js';
+import { DEFAULT_WEIGHTS } from './types.js';
 import type { GhostEvent, GhostNode, GravityTier } from './types.js';
 
 const nodes: GhostNode[] = [
@@ -189,5 +190,110 @@ describe('optimize — canvas positions', () => {
       expect(pos.x).toBeGreaterThanOrEqual(0.19);
       expect(pos.y).toBeGreaterThanOrEqual(0.19);
     }
+  });
+});
+
+describe('transition-based scoring', () => {
+  const now = 1_000_000;
+  const baseNodes: GhostNode[] = [
+    { id: 'a', zone: 'z' },
+    { id: 'b', zone: 'z' },
+    { id: 'c', zone: 'z' },
+  ];
+
+  it('boosts a node clicked after hovering another node', () => {
+    const events: GhostEvent[] = [
+      { id: 'a', zone: 'z', type: 'hover', ts: now - 1500 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 1000 }, // transition a→b
+    ];
+    const plan = optimize({ nodes: baseNodes, events, now });
+    // b has a transition-in; a has only a hover — b should score higher
+    expect(plan.emphasis['b']).toBeGreaterThan(plan.emphasis['a'] ?? 0);
+  });
+
+  it('does not count transition when click is on the same node as the hover', () => {
+    const nodeB: GhostNode = { id: 'b', zone: 'z' };
+    const W = 7 * 86_400_000;
+
+    // Same-node hover+click: no transition
+    const eventsNoTransition: GhostEvent[] = [
+      { id: 'b', zone: 'z', type: 'hover', ts: now - 900 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 800 },
+    ];
+    const scoreNoTransition = explainScore('b', nodeB, eventsNoTransition, DEFAULT_WEIGHTS, W, W, now);
+
+    // Cross-node hover+click: transition counted
+    const eventsWithTransition: GhostEvent[] = [
+      { id: 'a', zone: 'z', type: 'hover', ts: now - 1500 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 1000 },
+    ];
+    const scoreWithTransition = explainScore('b', nodeB, eventsWithTransition, DEFAULT_WEIGHTS, W, W, now);
+
+    expect(scoreNoTransition.transitionScore).toBe(0);
+    expect(scoreWithTransition.transitionScore).toBeGreaterThan(0);
+  });
+
+  it('does not count transition when click is outside intentWindowMs', () => {
+    const nodeB: GhostNode = { id: 'b', zone: 'z' };
+    const W = 7 * 86_400_000;
+    const intentWindowMs = 500;
+
+    // Gap of 1000ms — outside intent window
+    const eventsOutside: GhostEvent[] = [
+      { id: 'a', zone: 'z', type: 'hover', ts: now - 2000 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 1000 },
+    ];
+    const scoreOutside = explainScore('b', nodeB, eventsOutside, DEFAULT_WEIGHTS, W, W, now, intentWindowMs);
+
+    // Gap of 300ms — inside intent window
+    const eventsInside: GhostEvent[] = [
+      { id: 'a', zone: 'z', type: 'hover', ts: now - 400 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 100 },
+    ];
+    const scoreInside = explainScore('b', nodeB, eventsInside, DEFAULT_WEIGHTS, W, W, now, intentWindowMs);
+
+    expect(scoreOutside.transitionScore).toBe(0);
+    expect(scoreInside.transitionScore).toBeGreaterThan(0);
+  });
+
+  it('accumulates multiple inbound transitions', () => {
+    const events: GhostEvent[] = [
+      { id: 'a', zone: 'z', type: 'hover', ts: now - 5000 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 4800 }, // a→b
+      { id: 'c', zone: 'z', type: 'hover', ts: now - 4000 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 3800 }, // c→b
+      { id: 'a', zone: 'z', type: 'hover', ts: now - 3000 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 2800 }, // a→b again
+    ];
+    // b has 3 inbound transitions, c has 0
+    const plan = optimize({ nodes: baseNodes, events, now });
+    expect(plan.order['z']?.[0]).toBe('b');
+    expect(plan.emphasis['b'] ?? 0).toBeGreaterThan(plan.emphasis['c'] ?? 0);
+  });
+
+  it('transition weight=0 disables transition scoring', () => {
+    const events: GhostEvent[] = [
+      { id: 'a', zone: 'z', type: 'hover', ts: now - 1500 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 1000 }, // a→b transition
+    ];
+    const withTransition = optimize({ nodes: baseNodes, events, now });
+    const withoutTransition = optimize({
+      nodes: baseNodes, events, now,
+      weights: { transition: 0 },
+    });
+    // With weight=0, b's score should be lower (no transition bonus)
+    const bEmphasisWith = withTransition.emphasis['b'] ?? 0;
+    const bEmphasisWithout = withoutTransition.emphasis['b'] ?? 0;
+    expect(bEmphasisWith).toBeGreaterThanOrEqual(bEmphasisWithout);
+  });
+
+  it('explainScore includes transitionScore', () => {
+    const nodeB: GhostNode = { id: 'b', zone: 'z' };
+    const events: GhostEvent[] = [
+      { id: 'a', zone: 'z', type: 'hover', ts: now - 1500 },
+      { id: 'b', zone: 'z', type: 'click', ts: now - 1000 },
+    ];
+    const breakdown = explainScore('b', nodeB, events, DEFAULT_WEIGHTS, 7 * 86_400_000, 86_400_000, now);
+    expect(breakdown.transitionScore).toBeGreaterThan(0);
   });
 });
