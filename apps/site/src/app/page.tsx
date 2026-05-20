@@ -98,6 +98,7 @@ export default function Page() {
             <a className={NAV_LINK} href="#install">Install</a>
             <a className={NAV_LINK} href="#principles">Principles</a>
             <a className={NAV_LINK} href="#showcase">Showcase</a>
+            <a className="inline-flex h-full items-center rounded-full px-3 text-[13px] font-medium tracking-[-0.005em] text-accent no-underline transition-colors duration-200 hover:bg-accent/[0.08]" href="/library">Library</a>
           </nav>
           <span className="mx-1 h-5 w-px bg-line-2" aria-hidden />
           <a
